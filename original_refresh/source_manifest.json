@@ -1,0 +1,47 @@
+{
+  "download": {
+    "notebook_cell": 4,
+    "original_functions_identical": true,
+    "original_cell_sha256": "a4224e2203d7a3a0be72701d6c54240c4b4099dd48fd31b77b5b738ef507152f"
+  },
+  "samples": {
+    "notebook_cell": 5,
+    "original_functions_identical": true,
+    "original_cell_sha256": "effdeac24ca0f524bc726ce5b07a84b1babd972c8587f3fd72a9e800a8a7bf10"
+  },
+  "discovery": {
+    "notebook_cell": 6,
+    "original_functions_identical": true,
+    "original_cell_sha256": "a91b35bef53a17d63a2a04e300ae6679343de76cd7e17214c06ca08e06238f3c"
+  },
+  "validation": {
+    "notebook_cell": 8,
+    "original_functions_identical": true,
+    "original_cell_sha256": "25b7768e94614b0ee52bdabcf603a4cd5d903933d3e5d10d7075261bfbf19b8d"
+  },
+  "specification": {
+    "notebook_cell": 9,
+    "original_functions_identical": true,
+    "original_cell_sha256": "c7740a3fcb1e1c1f1905197d9e7c345cd2140f36c5e42792ea3db10678b555e8"
+  },
+  "mvou": {
+    "notebook_cell": 10,
+    "original_functions_identical": true,
+    "original_cell_sha256": "ce71f8f1844122f083748db18e14c35a8324dce2a13521c9af62a14c9bcc192d"
+  },
+  "signals": {
+    "notebook_cell": 14,
+    "original_functions_identical": true,
+    "original_cell_sha256": "a553959b48e8984b0b17dcd077cb87a14e0d05147abd74a1ecd60a2dc59111ab"
+  },
+  "audit": {
+    "notebook_cell": 17,
+    "original_functions_identical": true,
+    "original_cell_sha256": "9a35893fc9ebe12dd1f457ae6dba860987d09b5f43206b7c61a7dfb49b5d0698"
+  },
+  "analytics": {
+    "notebook_cell": 21,
+    "original_functions_identical": true,
+    "original_cell_sha256": "882ae8fb81f49d666d4d5da6304b41998913c9193124eb2f2273f54872e22796"
+  }
+}

@@ -1,16 +1,62 @@
-name: Original model restored — automatic refresh disabled
+name: Original Meridian daily refresh
 on:
+  schedule:
+    - cron: '30 23 * * 1-5'
+  workflow_dispatch:
   push:
     paths:
+      - original_refresh/**
+      - data/original_universe.csv
+      - requirements-original-refresh.txt
       - .github/workflows/refresh.yml
-  workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 concurrency:
-  group: meridian-refresh
-  cancel-in-progress: true
+  group: meridian-original-refresh
+  cancel-in-progress: false
 jobs:
-  stop-modified-refresh:
+  refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
     steps:
-      - run: echo 'Original model restored. Modified automatic refresh disabled.'
+      - uses: actions/checkout@v4
+      - name: Require original inputs
+        id: inputs
+        run: |
+          if [ -f data/original_universe.csv ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo '::error::Original eligible_universe_v2.csv has not been supplied. No refresh or publication occurred.'
+            exit 1
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.inputs.outputs.ready == 'true'
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-original-refresh.txt
+      - run: pip install -r requirements-original-refresh.txt
+        if: steps.inputs.outputs.ready == 'true'
+      - run: python original_refresh/run.py
+        if: steps.inputs.outputs.ready == 'true'
+      - name: Publish original-model results
+        if: steps.inputs.outputs.ready == 'true'
+        run: |
+          git config user.name 'Meridian original refresh'
+          git config user.email 'YieldShock13@users.noreply.github.com'
+          git add pipeline
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update original Meridian model to latest completed session'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.inputs.outputs.ready == 'true'
+        with:
+          name: original-model-run-evidence
+          path: runtime_original/
+          retention-days: 30
