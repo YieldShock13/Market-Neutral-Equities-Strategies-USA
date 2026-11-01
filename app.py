@@ -131,20 +131,11 @@ except Exception as exc:
     st.stop()
 
 data = data[data["Status"] == "SIGNAL_COMPUTED"].copy()
-# Legacy exports have no proof of the mandatory rolling full-history gate.
-# Do not show those baskets as currently eligible after tightening the rule.
-verified_tickers = set()
-proof_path = PIPE / "data_audit.csv"
-if status_path.exists() and proof_path.exists():
-    manifest = json.loads(status_path.read_text())
-    if manifest.get("eligibility_policy") == "rolling_1260_complete_sessions_v1":
-        proof = pd.read_csv(proof_path)
-        if "Eligible5TradingYears" in proof and "Ticker" in proof:
-            passed = proof["Eligible5TradingYears"].astype(str).str.lower().eq("true")
-            passed &= proof["RequiredSessions"].eq(1260)
-            passed &= proof["WindowEnd"].eq(manifest.get("window_end"))
-            verified_tickers = set(proof.loc[passed, "Ticker"])
-data = data.loc[data["Basket"].map(lambda basket: set(str(basket).split("|")).issubset(verified_tickers))].copy()
+# Render saved research independently of an unfinished refresh's audit artifacts.
+snapshot_file = PIPE / "dashboard_analytics/spread_history.csv"
+if snapshot_file.exists():
+    snapshot_date = pd.read_csv(snapshot_file, usecols=["Date"])["Date"].max()
+    st.caption(f"Saved research snapshot: {snapshot_date} · Revised eligibility not yet verified.")
 
 # Legacy baskets must be recalculated, never relabelled as equivalent exposures.
 import re
@@ -158,7 +149,7 @@ data["Stability"] = np.where(
 )
 
 with st.sidebar:
-    st.image(str(ROOT / "assets/meridian-mark.svg"), width=64)
+    st.markdown(f'<img src="data:image/svg+xml;base64,{LOGO}" width="64" alt="Meridian" style="display:block;margin-bottom:12px;"/>', unsafe_allow_html=True)
     st.markdown("### Meridian")
     st.caption("MODEL X / UNIVERSE FILTERS")
 
@@ -227,7 +218,7 @@ st.dataframe(
 )
 
 if filtered.empty:
-    st.info("No baskets have verified complete five-trading-year data under the selected filters.")
+    st.info("No saved baskets match the selected filters.")
     st.stop()
 
 
