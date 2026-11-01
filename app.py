@@ -71,81 +71,22 @@ h3 {font-size:1.5rem !important;margin-top:1.6rem !important;}
 @media(max-width:700px) {.block-container{padding:1.5rem 1rem;}.meridian-header{padding:24px 12px;}.identity{gap:12px;}.identity img{width:68px;height:68px;}.brand{letter-spacing:.1em;}.edition{display:none;}.descriptor{font-size:10px;}}
 </style>
 """, unsafe_allow_html=True)
-from audit_tools import snapshot_audit, duplicate_issuer_basket
-from formulas import FORMULAS
-
-@st.dialog("Meridian · Audit & formulas", width="large")
-def show_audit_dialog():
-    quality, maths, backend = st.tabs(["Data integrity", "All formulas", "Backend review"])
-    with quality:
-        report = snapshot_audit(PIPE)
-        st.caption(report["scope"])
-        st.dataframe(pd.DataFrame(report["checks"]), hide_index=True, use_container_width=True)
-        raw_audit = PIPE / "data_audit.csv"
-        if raw_audit.exists():
-            st.markdown("#### Raw-price and sample exclusions")
-            st.dataframe(pd.read_csv(raw_audit), hide_index=True, use_container_width=True)
-        probe = PIPE / "legacy_price_probe.csv"
-        if probe.exists():
-            st.markdown("#### Fresh vendor comparison with legacy snapshot")
-            st.caption("Re-downloaded today; vendor revisions can differ from the original download.")
-            st.dataframe(pd.read_csv(probe), hide_index=True, use_container_width=True)
-        omissions = PIPE / "omitted_sessions.csv"
-        if omissions.exists():
-            st.markdown("#### Jointly omitted dates")
-            st.dataframe(pd.read_csv(omissions), hide_index=True, use_container_width=True)
-        st.markdown("#### Missing and infinite values")
-        if report["missing"]:
-            st.dataframe(pd.DataFrame(report["missing"]), hide_index=True, use_container_width=True)
-            st.caption("Includes optional diagnostics; missing values are disclosed rather than filled.")
-        else:
-            st.write("No missing or infinite cells found in the readable published CSVs.")
-        st.download_button("Download snapshot audit", json.dumps(report, indent=2), "meridian_snapshot_audit.json", "application/json")
-    with maths:
-        for title, formula, explanation in FORMULAS:
-            with st.expander(title):
-                st.latex(formula)
-                st.write(explanation)
-    with backend:
-        report_path = ROOT / "AUDIT.md"
-        st.markdown(report_path.read_text() if report_path.exists() else "Backend report unavailable.")
-        proof = PIPE / "backend_audit.json"
-        if proof.exists():
-            st.download_button("Download backend evidence", proof.read_bytes(), "meridian_backend_audit.json", "application/json")
-
-import json
-_, audit_control = st.columns([5, 1])
-with audit_control:
-    if st.button("Audit & formulas", use_container_width=True):
-        show_audit_dialog()
-
 st.markdown(f"""
 <div class="meridian-header"><div class="identity"><img src="data:image/svg+xml;base64,{LOGO}" alt="Meridian globe and M monogram"/><div><div class="brand">MERIDIAN</div><div class="model">Model X</div></div></div><div class="descriptor">Market-neutral equities &nbsp; / &nbsp; Relative value research</div><div class="edition">Equities / United States</div></div>
 """, unsafe_allow_html=True)
-import json
-status_path = PIPE / "refresh_status.json"
-if status_path.exists():
-    refresh = json.loads(status_path.read_text())
-    st.caption(f"Price date: {refresh['price_date']} · Updated: {refresh['completed_at']} · {refresh['eligible_issuers']:,} issuers")
 
 try:
     data, positions = load_data()
-    snapshot_file = PIPE / "dashboard_analytics/spread_history.csv"
-    if snapshot_file.exists():
-        date = pd.read_csv(snapshot_file, usecols=["Date"])["Date"].max()
-        st.caption(f"Saved research snapshot: {date}")
 except Exception as exc:
     st.error(f"Unable to load research files: {exc}")
     st.stop()
 
-data = data[data["Status"] == "SIGNAL_COMPUTED"].copy()
-# Legacy baskets must be recalculated, never relabelled as equivalent exposures.
-import re
-legacy_duplicate = data["Basket"].map(duplicate_issuer_basket)
-data = data.loc[~legacy_duplicate].copy()
+data = data[
+    data["Status"] == "SIGNAL_COMPUTED"
+].copy()
 
 data["Stability"] = np.where(
-    data["TrainSpecificationRobust"].map(lambda v: str(v).lower() == "true"),
+    data["TrainSpecificationRobust"].fillna(False),
     "PASS",
     "FLAGGED"
 )
@@ -153,7 +94,7 @@ data["Stability"] = np.where(
 with st.sidebar:
     st.markdown(f'<img src="data:image/svg+xml;base64,{LOGO}" width="64" alt="Meridian"/>', unsafe_allow_html=True)
     st.markdown("### Meridian")
-    st.caption("MODEL X / UNIVERSE FILTERS")
+    st.caption("MODEL X / FILTERS")
 
     horizons = st.multiselect(
         "Estimation horizon",
@@ -196,7 +137,7 @@ c3.metric(
     if len(filtered) else "—"
 )
 
-st.subheader("Opportunity Monitor")
+st.subheader("Relative Mispricing Rankings")
 
 columns = [
     "Horizon",
@@ -210,7 +151,7 @@ columns = [
 
 st.dataframe(
     filtered[columns].rename(columns={
-        "JointMispricing": "Joint distance",
+        "JointMispricing": "Absolute Z",
         "PortfolioBeta": "Portfolio Beta",
         "MarketExplainedVariancePct": "Market R² (%)",
         "NetDollarExposurePct": "Net Exposure (%)"
@@ -220,12 +161,11 @@ st.dataframe(
 )
 
 if filtered.empty:
-    st.info("No saved baskets match the selected filters.")
+    st.info("No baskets match the selected filters.")
     st.stop()
 
 
 
-st.caption("Missing dates are jointly omitted. Model convergence is measured in common observation steps, not elapsed trading days.")
 st.subheader("Basket Analytics")
 
 choices = {
@@ -300,6 +240,7 @@ pio.templates["meridian"] = go.layout.Template(
                 margin=dict(l=24,r=24,t=32,b=32),
                 hoverlabel=dict(bgcolor="#fbfaf6",font_color="#35434c")))
 pio.templates.default = "plotly_white+meridian"
+
 
 
 COLORS = {
@@ -448,10 +389,10 @@ with tab2:
         fig = px.line(
             r, x="Date", y="HalfLifeDays",
             markers=True,
-            labels={"HalfLifeDays": "Common observation steps"}
+            labels={"HalfLifeDays": "Trading days"}
         )
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360)
+        fig.update_layout(height=360)
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.markdown("#### Equilibrium stability")
@@ -467,7 +408,7 @@ with tab2:
             name="Dispersion ratio"
         ))
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360, hovermode="x unified")
+        fig.update_layout(height=360, hovermode="x unified")
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.markdown("#### Rolling stationarity diagnostics")
@@ -478,7 +419,7 @@ with tab2:
         fig.add_hline(y=0.05, line_dash="dash")
         fig.add_hline(y=0.10, line_dash="dot")
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=340)
+        fig.update_layout(height=340)
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.dataframe(
@@ -502,10 +443,10 @@ with tab3:
             pivot,
             text_auto=".4f",
             aspect="auto",
-            color_continuous_scale=["#748a99", "#f6f3eb", "#a29383"],
+            color_continuous_scale="RdBu_r",
             color_continuous_midpoint=0
         )
-        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360)
+        fig.update_layout(height=360)
         st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.markdown("#### Stationary eigenmodes")
@@ -539,7 +480,7 @@ with tab3:
         fig.add_hline(y=0.5, line_dash="dash")
         fig.update_layout(
             height=360,
-            xaxis_title="Common observation steps",
+            xaxis_title="Trading days",
             yaxis_title="Remaining deviation magnitude"
         )
         st.plotly_chart(fig, use_container_width=True, theme=None)
@@ -574,7 +515,7 @@ with tab4:
             "SHORT": "#a1877e"
         }
     )
-    fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360)
+    fig.update_layout(height=360)
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.write(
@@ -592,4 +533,3 @@ st.caption(
     "The colour thresholds are heuristic, not probabilities "
     "of future convergence."
 )
-

@@ -1,11 +1,12 @@
 # Meridian · Model X
 
-GitHub holds the maintained Streamlit app, calculation stages, refresh workflow and tests. Colab is a research copy.
+Original research restored from commit `7f3905975fbf4a371a4f0ff2368739a423107b4c`, retaining the cream-and-silver Meridian presentation.
 
-## Current data rule
+- All original published CSV files restored byte-for-byte from that commit.
+- Original dashboard functions and calculation-dependent behaviour restored.
+- Original supplied Colab Python export saved in `research/original_colab.py`. An embedded credential string was redacted; calculation code was not changed.
+- Later eligibility changes, date omission logic, signal/model changes and display exclusions removed.
+- Modified automated refresh disabled. The workflow only cancels superseded modified runs and has no permission or step to publish data.
+- Historical results are restored, not newly recalculated or newly validated.
 
-Exclude listings newer than the first common observed price date in January 2017. Build the common date range from the union of valid observations across the screened pack. Dates absent for everyone are not inserted. A zero return is valid; it is not a missing price. Exclude tickers missing more than 1% of peer-observed dates. Jointly omit remaining affected dates across the eligible pack; do not invent zero returns. The fitted model clock is common observation steps, not elapsed trading-day time. See AUDIT.md for implications and unresolved checks.
-
-Run `pip install -r requirements.txt -r requirements-refresh.txt`, then `python -m unittest discover -s tests -v`. `python scripts/integration_audit.py` runs controlled integration tests without replacing live data. `python scripts/refresh.py` runs the real-data pipeline.
-
-The scheduled refresh runs after US weekdays at 23:30 UTC. Successful audited runs push outputs; failures retain the previous snapshot. Model reports, raw returned prices, metadata, hashes and fitted models are retained in workflow artifacts for 30 days. Source changes cancel superseded refreshes so old code cannot block or publish ahead of newer code.
+Restoration source SHA-256 (credential-redacted Python export): 93767a4a8d31b82eedf895a993d3fce624c0aa53dd6c6e7f7f30b6b6d7abddea
