@@ -5,7 +5,7 @@ import numpy as np
 from pathlib import Path
 
 st.set_page_config(
-    page_title="MVOU Relative Value",
+    page_title="Meridian | Model X", page_icon="◉",
     layout="wide"
 )
 
@@ -40,10 +40,28 @@ def load_data():
 
     return data, positions
 
-st.title("MVOU Relative Value Scanner")
-st.caption(
-    "Cointegration • Mean reversion • Current mispricing"
-)
+st.markdown("""
+<style>
+.block-container {max-width:1480px;padding-top:2.2rem;}
+[data-testid="stSidebar"] {border-right:1px solid #29404b;}
+[data-testid="stMetric"] {background:#14212b;border:1px solid #29404b;border-radius:12px;padding:18px;}
+[data-testid="stMetricLabel"] {text-transform:uppercase;letter-spacing:.12em;font-size:.7rem;}
+h1,h2,h3 {font-weight:400 !important;letter-spacing:.025em;}
+.meridian-header {position:relative;overflow:hidden;border:1px solid #36505c;background:linear-gradient(115deg,#172c37,#0c141b);padding:36px 40px;border-radius:16px;margin-bottom:24px;}
+.meridian-header:after {content:"";position:absolute;width:330px;height:330px;right:60px;top:-110px;border:1px solid #bda37166;border-radius:50%;box-shadow:0 0 0 35px #bda37109,0 0 0 70px #bda37108,0 0 0 105px #bda37106;pointer-events:none;}
+.brand {font-family:Georgia,serif;font-size:clamp(36px,6vw,66px);letter-spacing:.18em;color:#e9edf0;line-height:1.2;}
+.model {color:#bda371;font-size:15px;letter-spacing:.32em;text-transform:uppercase;margin-top:12px;}
+.descriptor {color:#a5b7c0;margin-top:18px;font-size:14px;}
+</style>
+<div class="meridian-header"><div class="brand">MERIDIAN</div><div class="model">Model X</div><div class="descriptor">Market-neutral equities · Relative value research</div></div>
+""", unsafe_allow_html=True)
+import json
+status_path = PIPE / "refresh_status.json"
+if status_path.exists():
+    refresh = json.loads(status_path.read_text())
+    st.caption(f"Price date: {refresh['price_date']} · Updated: {refresh['completed_at']} · {refresh['eligible_issuers']:,} issuers")
+else:
+    st.info("Historical snapshot · First automated refresh pending")
 
 try:
     data, positions = load_data()
@@ -51,9 +69,13 @@ except Exception as exc:
     st.error(f"Unable to load research files: {exc}")
     st.stop()
 
-data = data[
-    data["Status"] == "SIGNAL_COMPUTED"
-].copy()
+data = data[data["Status"] == "SIGNAL_COMPUTED"].copy()
+# Legacy baskets must be recalculated, never relabelled as equivalent exposures.
+import re
+legacy_duplicate = data["Basket"].astype(str).map(lambda value: bool(re.search(r"(?<![A-Z])ZG(?![A-Z])", value)))
+if legacy_duplicate.any():
+    st.caption(f"{int(legacy_duplicate.sum())} legacy baskets excluded pending issuer-deduplicated refresh.")
+data = data.loc[~legacy_duplicate].copy()
 
 data["Stability"] = np.where(
     data["TrainSpecificationRobust"].fillna(False),
@@ -62,7 +84,8 @@ data["Stability"] = np.where(
 )
 
 with st.sidebar:
-    st.header("Filters")
+    st.markdown("### Meridian")
+    st.caption("MODEL X / UNIVERSE FILTERS")
 
     horizons = st.multiselect(
         "Estimation horizon",
@@ -105,7 +128,7 @@ c3.metric(
     if len(filtered) else "—"
 )
 
-st.subheader("Relative Mispricing Rankings")
+st.subheader("Opportunity Monitor")
 
 columns = [
     "Horizon",
@@ -348,7 +371,7 @@ with tab2:
             labels={"HalfLifeDays": "Trading days"}
         )
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(height=360)
+        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360)
         st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("#### Equilibrium stability")
@@ -364,7 +387,7 @@ with tab2:
             name="Dispersion ratio"
         ))
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(height=360, hovermode="x unified")
+        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360, hovermode="x unified")
         st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("#### Rolling stationarity diagnostics")
@@ -375,7 +398,7 @@ with tab2:
         fig.add_hline(y=0.05, line_dash="dash")
         fig.add_hline(y=0.10, line_dash="dot")
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(height=340)
+        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=340)
         st.plotly_chart(fig, use_container_width=True)
 
         st.dataframe(
@@ -402,7 +425,7 @@ with tab3:
             color_continuous_scale="RdBu_r",
             color_continuous_midpoint=0
         )
-        fig.update_layout(height=360)
+        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360)
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("#### Stationary eigenmodes")
@@ -471,7 +494,7 @@ with tab4:
             "SHORT": "#dc5555"
         }
     )
-    fig.update_layout(height=360)
+    fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360)
     st.plotly_chart(fig, use_container_width=True)
 
     st.write(
@@ -484,8 +507,9 @@ with tab4:
     )
 
 st.caption(
-    "MVOU research dashboard | Historical diagnostics use "
+    "Meridian · Model X | Historical diagnostics use "
     "fixed fitted cointegrating vectors and trailing windows. "
     "The colour thresholds are heuristic, not probabilities "
     "of future convergence."
 )
+
