@@ -25,8 +25,9 @@ def main():
     audit=pd.DataFrame(records)
     audit.to_csv(root/'data_audit.csv',index=False)
     bad=['Infinite','Nonpositive','DuplicateDates','InvalidDates','UnsortedDates']
-    if audit.empty or audit[bad].to_numpy().any():
-        raise ValueError('Raw price audit failed: invalid prices or date structure; inspect data_audit.csv')
+    if audit.empty:
+        raise ValueError('No raw prices available')
+    # The shared 2520-session gate excludes invalid tickers individually before all tests.
 
 if __name__=='__main__':
     main()

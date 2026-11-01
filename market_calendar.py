@@ -12,3 +12,11 @@ def completed_sessions(now=None, years=11):
     completed=[s for s in sessions if calendar.session_close(s)<=now]
     index=pd.DatetimeIndex(completed)
     return index.tz_localize(None).normalize() if index.tz is not None else index.normalize()
+
+
+def rolling_ten_trading_years(now=None):
+    from eligibility import REQUIRED_SESSIONS
+    sessions=completed_sessions(now,years=12)
+    if len(sessions)<REQUIRED_SESSIONS:
+        raise ValueError("Insufficient exchange-calendar coverage")
+    return sessions[-REQUIRED_SESSIONS:]

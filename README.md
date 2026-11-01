@@ -15,3 +15,5 @@ GitHub is the maintained version. Colab can import this repository for research;
 Run `pip install -r requirements.txt -r requirements-refresh.txt`, then `python -m unittest discover -s tests -v`. For the offline synthetic integration run use `python scripts/integration_audit.py`. For a real refresh use `python scripts/refresh.py`. Synthetic prices never replace published research data.
 
 The refresh is scheduled after US weekdays at 23:30 UTC (01:30 South African time the following day). Successful runs validate and commit results; failures preserve prior published data. GitHub schedules can be delayed. Research output is not a trading approval; see AUDIT.md for unresolved validation.
+
+Eligibility is rolling 2520 completed exchange sessions. One missing/nonfinite/nonpositive price excludes a ticker from every test horizon. See eligibility.py and the updated formula catalogue.

@@ -28,13 +28,20 @@ def main():
     with tempfile.TemporaryDirectory() as directory:
         os.chdir(directory)
         root=Path('runtime');(root/'prices').mkdir(parents=True)
+        pd.Series(dates[-2520:],name='Date').to_csv(root/'calendar.csv',index=False)
         for ticker in frame:
             frame[ticker].to_csv(root/'prices'/f'{ticker}.csv')
+        damaged=frame.iloc[:,0].copy();damaged.iloc[-2400]=np.nan
+        damaged.to_csv(root/'prices/SYN_GAP.csv')
         try:
             for stage in ['samples','discovery','validation','specification','mvou','signals','audit','analytics']:
                 capture=io.StringIO()
                 with patch('yfinance.download',return_value=pd.DataFrame({'Adj Close':np.exp(trend)},index=dates)),contextlib.redirect_stdout(capture):
                     runpy.run_path(str(ROOT/'scripts/stages'/f'{stage}.py'),run_name='__main__')
+                if stage=='samples':
+                    for horizon in ['1Y','3Y','5Y','FULL']:
+                        sample=pd.read_pickle(root/f'prices_{horizon}.pkl')
+                        assert set(sample.columns)=={'SYN_A','SYN_B','SYN_C'},horizon
                 results.append({'stage':stage,'status':'PASS','log_tail':capture.getvalue()[-250:]})
             from audit_tools import snapshot_audit
             report=snapshot_audit(root/'pipeline')

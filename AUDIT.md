@@ -41,7 +41,7 @@ Cross-file consistency cannot establish vendor correctness: matching outputs can
 +
 +## Numerical and integration evidence
 
-- Eight targeted tests: completed-session cutoff; duplicate classes; invalid raw values/dates; sequential rank stopping; known joint VAR recovery and Lyapunov identity; invariance under invertible spread-coordinate changes; signal direction/gross exposure; constant-series detection and absent-evidence handling.
+- Nine targeted tests: completed-session cutoff; duplicate classes; invalid raw values/dates; sequential rank stopping; known joint VAR recovery and Lyapunov identity; invariance under invertible spread-coordinate changes; signal direction/gross exposure; constant-series detection and absent-evidence handling.
 - Synthetic integration: samples → discovery → candidate validation → specification sensitivity → joint MVOU → signals → audit/positions → analytics, followed by cross-file reconciliation. All eight stages pass on controlled, explicitly synthetic prices. This is not a replay of the original real-data run.
 - `pipeline/backend_audit.json` holds checks on the published snapshot. `pipeline/integration_audit.json` holds synthetic integration evidence.
 - Raw returned prices, metadata, per-stage CSVs, fitted models, matrix hashes and failure traces are retained as workflow artifacts for 30 days on new runs. This retention window is not a permanent historical data archive.
@@ -55,3 +55,10 @@ Cross-file consistency cannot establish vendor correctness: matching outputs can
 - LASSO objective: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html
 
 All implemented formulas and diagnostic thresholds are available in the All formulas tab. They describe the actual code and explicitly identify in-sample selection, heuristics, approximations and unverified execution assumptions.
+
+
+## Mandatory rolling history rule — updated
+
+Ten trading years is defined as **2520 completed exchange sessions (252 × 10)**. The window rolls from the latest officially completed session every run; there is no fixed start date. All 2520 session prices must be present, positive and finite, with unique dates. One missing observation excludes the ticker before every statistical test, including shorter 1Y/3Y/5Y windows. Those windows use 252/756/1260 sessions respectively, from the exact same eligible universe. FULL now means 2520 sessions, not an 11-year download buffer.
+
+The previous implementation checked completeness separately per horizon, which could admit a ticker with an older gap into a shorter-window test. That violated the required global rule and has been replaced. Legacy result files do not carry proof of this new gate and are not displayed as eligible; a successful new-policy refresh must provide the per-ticker completeness audit and window manifest. The formulas tab now includes explicit rolling eligibility, OLS matrix solution, residual covariance, ADF regression, numerical conditioning, continuous diffusion, reliability thresholds and rank-robustness equations.

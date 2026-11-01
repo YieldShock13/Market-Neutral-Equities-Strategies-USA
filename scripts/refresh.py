@@ -18,7 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'runtime'
 sys.path.insert(0,str(ROOT))
 from audit_tools import ISSUER_CLASSES
-from market_calendar import completed_sessions
+from market_calendar import rolling_ten_trading_years
+from eligibility import complete_history
 
 def issuer_key(info):
     # Issuer identity, not ticker identity. Class suffixes are removed only
@@ -53,14 +54,14 @@ def fetch_security(row):
         today = SESSION_END
         # Official exchange cutoff also protects manual intraday refreshes.
         series = series.loc[series.index <= today]
-        valid = series.dropna()
-        if valid.empty or valid.index.min() > today - pd.DateOffset(years=10):
-            return {'ticker':symbol,'status':'EXCLUDED','reason':'Less than ten years observed history'}
+        aligned,coverage=complete_history(series,REQUIRED_CALENDAR)
+        if not coverage['Eligible10TradingYears']:
+            return dict(ticker=symbol,status='EXCLUDED',reason='Incomplete rolling 2520-session history',**coverage)
         key = issuer_key(info)
         for group in ISSUER_CLASSES:
             if symbol in group:
                 key = 'classes:' + '|'.join(sorted(group))
-        return dict(status='ELIGIBLE',reason='Automated screens passed; security classification not independently verified',ticker=symbol, issuer=key, volume=float(info.get('averageVolume') or 0),
+        return dict(**coverage,status='ELIGIBLE',reason='Automated screens passed; security classification not independently verified',ticker=symbol, issuer=key, volume=float(info.get('averageVolume') or 0),
                     series=series, name=name)
     except Exception as exc:
         print(f'{symbol}: unavailable ({type(exc).__name__})', flush=True)
@@ -81,7 +82,9 @@ def main():
     RUNTIME.mkdir(exist_ok=True)
     (RUNTIME / 'vendor').mkdir(exist_ok=True)
     (RUNTIME / 'metadata').mkdir(exist_ok=True)
-    sessions=completed_sessions()
+    sessions=rolling_ten_trading_years()
+    global REQUIRED_CALENDAR
+    REQUIRED_CALENDAR=sessions
     global SESSION_END
     SESSION_END=sessions.max()
     pd.Series(sessions,name='Date').to_csv(RUNTIME/'calendar.csv',index=False)
@@ -149,6 +152,10 @@ def main():
         'eligible_issuers':len(selected), 'status':'success',
         'source_commit':os.environ.get('GITHUB_SHA','local'),
         'unresolved_requests':failed,
+        'eligibility_policy':'rolling_2520_complete_sessions_v1',
+        'required_sessions':2520,
+        'window_start':str(REQUIRED_CALENDAR.min().date()),
+        'window_end':str(REQUIRED_CALENDAR.max().date()),
         'universe_scope':'Current membership and market cap; not historical point-in-time membership'
     }, indent=2))
 
