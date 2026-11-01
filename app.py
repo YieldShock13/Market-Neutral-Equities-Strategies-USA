@@ -71,6 +71,50 @@ h3 {font-size:1.5rem !important;margin-top:1.6rem !important;}
 @media(max-width:700px) {.block-container{padding:1.5rem 1rem;}.meridian-header{padding:24px 12px;}.identity{gap:12px;}.identity img{width:68px;height:68px;}.brand{letter-spacing:.1em;}.edition{display:none;}.descriptor{font-size:10px;}}
 </style>
 """, unsafe_allow_html=True)
+from audit_tools import snapshot_audit, duplicate_issuer_basket
+from formulas import FORMULAS
+
+@st.dialog("Meridian · Audit & formulas", width="large")
+def show_audit_dialog():
+    quality, maths, backend = st.tabs(["Data integrity", "All formulas", "Backend review"])
+    with quality:
+        report = snapshot_audit(PIPE)
+        st.caption(report["scope"])
+        st.dataframe(pd.DataFrame(report["checks"]), hide_index=True, use_container_width=True)
+        raw_audit = PIPE / "data_audit.csv"
+        if raw_audit.exists():
+            st.markdown("#### Raw-price and sample exclusions")
+            st.dataframe(pd.read_csv(raw_audit), hide_index=True, use_container_width=True)
+        probe = PIPE / "legacy_price_probe.csv"
+        if probe.exists():
+            st.markdown("#### Fresh vendor comparison with legacy snapshot")
+            st.caption("Re-downloaded today; vendor revisions can differ from the original download.")
+            st.dataframe(pd.read_csv(probe), hide_index=True, use_container_width=True)
+        st.markdown("#### Missing and infinite values")
+        if report["missing"]:
+            st.dataframe(pd.DataFrame(report["missing"]), hide_index=True, use_container_width=True)
+            st.caption("Includes optional diagnostics; missing values are disclosed rather than filled.")
+        else:
+            st.write("No missing or infinite cells found in the readable published CSVs.")
+        st.download_button("Download snapshot audit", json.dumps(report, indent=2), "meridian_snapshot_audit.json", "application/json")
+    with maths:
+        for title, formula, explanation in FORMULAS:
+            with st.expander(title):
+                st.latex(formula)
+                st.write(explanation)
+    with backend:
+        report_path = ROOT / "AUDIT.md"
+        st.markdown(report_path.read_text() if report_path.exists() else "Backend report unavailable.")
+        proof = PIPE / "backend_audit.json"
+        if proof.exists():
+            st.download_button("Download backend evidence", proof.read_bytes(), "meridian_backend_audit.json", "application/json")
+
+import json
+_, audit_control = st.columns([5, 1])
+with audit_control:
+    if st.button("Audit & formulas", use_container_width=True):
+        show_audit_dialog()
+
 st.markdown(f"""
 <div class="meridian-header"><div class="identity"><img src="data:image/svg+xml;base64,{LOGO}" alt="Meridian globe and M monogram"/><div><div class="brand">MERIDIAN</div><div class="model">Model X</div></div></div><div class="descriptor">Market-neutral equities &nbsp; / &nbsp; Relative value research</div><div class="edition">Equities / United States</div></div>
 """, unsafe_allow_html=True)
@@ -79,6 +123,8 @@ status_path = PIPE / "refresh_status.json"
 if status_path.exists():
     refresh = json.loads(status_path.read_text())
     st.caption(f"Price date: {refresh['price_date']} · Updated: {refresh['completed_at']} · {refresh['eligible_issuers']:,} issuers")
+else:
+    st.info("Historical snapshot · First automated refresh pending")
 
 try:
     data, positions = load_data()
@@ -89,19 +135,17 @@ except Exception as exc:
 data = data[data["Status"] == "SIGNAL_COMPUTED"].copy()
 # Legacy baskets must be recalculated, never relabelled as equivalent exposures.
 import re
-legacy_duplicate = data["Basket"].astype(str).map(lambda value: bool(re.search(r"(?<![A-Z])ZG(?![A-Z])", value)))
-if legacy_duplicate.any():
-    st.caption(f"{int(legacy_duplicate.sum())} legacy baskets excluded pending issuer-deduplicated refresh.")
+legacy_duplicate = data["Basket"].map(duplicate_issuer_basket)
 data = data.loc[~legacy_duplicate].copy()
 
 data["Stability"] = np.where(
-    data["TrainSpecificationRobust"].fillna(False),
+    data["TrainSpecificationRobust"].map(lambda v: str(v).lower() == "true"),
     "PASS",
     "FLAGGED"
 )
 
 with st.sidebar:
-    st.markdown(f'<img src="data:image/svg+xml;base64,{LOGO}" width="64" alt="Meridian" style="display:block;margin-bottom:12px;"/>', unsafe_allow_html=True)
+    st.image(str(ROOT / "assets/meridian-mark.svg"), width=64)
     st.markdown("### Meridian")
     st.caption("MODEL X / UNIVERSE FILTERS")
 
@@ -160,7 +204,7 @@ columns = [
 
 st.dataframe(
     filtered[columns].rename(columns={
-        "JointMispricing": "Absolute Z",
+        "JointMispricing": "Joint distance",
         "PortfolioBeta": "Portfolio Beta",
         "MarketExplainedVariancePct": "Market R² (%)",
         "NetDollarExposurePct": "Net Exposure (%)"

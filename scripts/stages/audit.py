@@ -1,4 +1,5 @@
-from IPython.display import display
+def display(value):
+    print(value.to_string() if hasattr(value, "to_string") else value)
 
 import json
 import numpy as np
@@ -22,8 +23,15 @@ active = signals.loc[
 
 def johansen_rank(y, k, det):
     j = coint_johansen(y, det_order=det, k_ar_diff=k)
-    trace = int(np.sum(j.lr1 > j.cvt[:, 1]))
-    eigen = int(np.sum(j.lr2 > j.cvm[:, 1]))
+    def sequential(statistics, critical):
+        rank = 0
+        for statistic, cutoff in zip(statistics, critical):
+            if statistic <= cutoff:
+                break
+            rank += 1
+        return rank
+    trace = sequential(j.lr1, j.cvt[:, 1])
+    eigen = sequential(j.lr2, j.cvm[:, 1])
     return min(trace, eigen)
 
 def audit_basket(row, prices):

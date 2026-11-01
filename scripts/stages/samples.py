@@ -1,4 +1,5 @@
-from IPython.display import display
+def display(value):
+    print(value.to_string() if hasattr(value, "to_string") else value)
 
 import pandas as pd
 import numpy as np
@@ -45,6 +46,14 @@ reference = reference.dropna()
 reference.index = pd.to_datetime(reference.index).tz_localize(None).normalize()
 
 calendar = reference.index
+calendar_file = ROOT / "calendar.csv"
+if calendar_file.exists():
+    official = pd.DatetimeIndex(pd.to_datetime(pd.read_csv(calendar_file)["Date"]))
+    reference = reference.loc[reference.index <= official.max()]
+    missing_reference = official.difference(reference.index)
+    if len(missing_reference):
+        raise ValueError(f"SPY missing {len(missing_reference)} official completed sessions")
+    calendar = official
 assert len(calendar) > 2000, "Invalid reference calendar"
 
 # Rebuild the matrix exclusively from saved files.
@@ -65,6 +74,20 @@ for file in files:
         failed.append((symbol, str(exc)))
 
 matrix = pd.DataFrame(prices, index=calendar)
+# Retain missing-session and per-horizon exclusion evidence before filtering.
+from scripts.data_quality import inspect_series
+audit_rows = []
+for file in files:
+    raw = pd.read_csv(file, index_col=0)
+    row = inspect_series(raw, file.stem, calendar)
+    aligned = matrix[file.stem]
+    row["MissingCalendarCells"] = int(aligned.isna().sum())
+    for label, years in [("1Y",1),("3Y",3),("5Y",5),("FULL",None)]:
+        sample = aligned if years is None else aligned.loc[aligned.index >= calendar.max()-pd.DateOffset(years=years)]
+        row[f"Eligible_{label}"] = bool(sample.notna().all() and np.isfinite(sample).all() and sample.gt(0).all())
+    audit_rows.append(row)
+pd.DataFrame(audit_rows).to_csv(ROOT / "data_audit.csv", index=False)
+
 matrix.index.name = "Date"
 matrix.to_pickle(ROOT / "adjusted_price_matrix.pkl")
 

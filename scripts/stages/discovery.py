@@ -1,4 +1,5 @@
-from IPython.display import display
+def display(value):
+    print(value.to_string() if hasattr(value, "to_string") else value)
 
 # ============================================================
 # MVOU — STAGE 2: LASSO CANDIDATE BASKET DISCOVERY
@@ -58,7 +59,7 @@ def discover_baskets(price_matrix, horizon):
 
     # Exclude constant-return stocks.
     valid = np.isfinite(Z).all(axis=0)
-    valid &= scaler.scale_ > 1e-12
+    valid &= scaler.var_ > 1e-24
 
     Z = Z[:, valid]
     tickers = tickers[valid]
@@ -83,7 +84,7 @@ def discover_baskets(price_matrix, horizon):
 
         ranked = np.argsort(-np.abs(corr[i]))
         peer_idx = ranked[
-            np.abs(corr[i, ranked]) >= MIN_CORRELATION
+            (np.abs(corr[i, ranked]) >= MIN_CORRELATION) & (ranked != i)
         ][:PREFILTER_PEERS]
 
         if len(peer_idx) < 2:

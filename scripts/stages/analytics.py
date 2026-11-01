@@ -1,4 +1,5 @@
-from IPython.display import display
+def display(value):
+    print(value.to_string() if hasattr(value, "to_string") else value)
 
 import numpy as np
 import pandas as pd
@@ -65,7 +66,9 @@ for horizon, group in active.groupby("Horizon"):
             if model_tickers != tickers:
                 raise ValueError("Model ticker order mismatch")
 
-            p = prices[tickers].dropna()
+            p = prices[tickers]
+            if p.isna().any().any() or not np.isfinite(p.to_numpy(float)).all() or not p.gt(0).all().all():
+                raise ValueError("Missing/nonfinite/nonpositive model input; no silent row deletion")
             Y = np.log(p.to_numpy(dtype=float))
             X = Y @ B
 
@@ -129,9 +132,9 @@ for horizon, group in active.groupby("Horizon"):
                     )
 
                     # Diagnostic labels, not proven regime states.
-                    if not np.isfinite(hl):
+                    if not np.isfinite([hl, adf_p, drift, dispersion]).all():
                         status = "FLAGGED"
-                        reason = "Unstable AR coefficient"
+                        reason = "Missing or unstable rolling diagnostics"
                     elif adf_p > 0.10:
                         status = "FLAGGED"
                         reason = "ADF p > 0.10"

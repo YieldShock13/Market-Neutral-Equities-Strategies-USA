@@ -1,4 +1,5 @@
-from IPython.display import display
+def display(value):
+    print(value.to_string() if hasattr(value, "to_string") else value)
 
 # ============================================================
 # MVOU — STAGE 4: JOINT MEAN-REVERSION ENGINE
@@ -203,8 +204,14 @@ def estimate_mvou(log_prices, B):
 
     if continuous_available:
         K = np.real(K_complex)
+        diffusion_covariance = K @ Sigma + Sigma @ K.T
+        diffusion_covariance = (diffusion_covariance + diffusion_covariance.T) / 2
+        tolerance = 1e-10 * max(1.0, np.linalg.norm(diffusion_covariance, ord=2))
+        continuous_available = np.linalg.eigvalsh(diffusion_covariance).min() >= -tolerance
+        if not continuous_available:
+            K = None
 
-        rates = np.linalg.eigvals(K)
+        rates = np.linalg.eigvals(np.real(K_complex)) if continuous_available else []
 
         for rate in rates:
             if abs(np.imag(rate)) < IMAGINARY_TOL:

@@ -1,4 +1,5 @@
-from IPython.display import display
+def display(value):
+    print(value.to_string() if hasattr(value, "to_string") else value)
 
 # ============================================================
 # MVOU — STAGE 3C: JOHANSEN SPECIFICATION VALIDATION

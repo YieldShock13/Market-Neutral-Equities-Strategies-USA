@@ -1,0 +1,49 @@
+{
+  "scope": "Synthetic offline integration; does not verify vendor or real raw data",
+  "steps": [
+    {
+      "stage": "samples",
+      "status": "PASS",
+      "log_tail": "     262               3\n1     3Y  2023-10-30  2026-10-30          785               3\n2     5Y  2021-11-01  2026-10-30         1305               3\n3   FULL  2015-09-21  2026-10-30         2900               3\n\nFile read failures: 0\n\nSaved: runtime\n"
+    },
+    {
+      "stage": "discovery",
+      "status": "PASS",
+      "log_tail": "78\n11    FULL  SYN_C  SYN_B|SYN_A  SYN_C|SYN_B|SYN_A           3  0.982324    0.004943  0.5139759078|0.4748915608\n2       1Y  SYN_C  SYN_B|SYN_A  SYN_C|SYN_B|SYN_A           3  0.982242    0.004945  0.5475729654|0.4410497976\n\nSaved to: runtime/lasso\n"
+    },
+    {
+      "stage": "validation",
+      "status": "PASS",
+      "log_tail": "   0\n3    FULL                   3                   1                       2               1       0\n\nOVERLAPPING VALIDATED BASKET PAIRS:\n0\n\nSaved current state: runtime/pipeline\nSaved historical snapshot: runtime/pipeline/history/20261101T124625Z\n"
+    },
+    {
+      "stage": "specification",
+      "status": "PASS",
+      "log_tail": "  1             1       0\n\nBIC LAG DISTRIBUTION\n  Horizon  BICDiffLags  Baskets\n0      1Y            0        1\n1      3Y            0        1\n2      5Y            0        1\n3    FULL            0        1\n\nSaved to: runtime/pipeline/specification\n"
+    },
+    {
+      "stage": "mvou",
+      "status": "PASS",
+      "log_tail": "e   PASS\n0  20261101T124625Z      3Y  16b35cf00d99a6e4b0ad  SYN_A|SYN_B|SYN_C           3     2           785        0.837895         2.097604              2.943329              3.919127                   True   PASS\n\nSaved to: runtime/pipeline/mvou\n"
+    },
+    {
+      "stage": "signals",
+      "status": "PASS",
+      "log_tail": "SYN_C  SYN_A  SHORT               -0.03367     1.00147\n4    FULL  SYN_A|SYN_B|SYN_C  SYN_B   LONG                0.50006     0.99979\n5    FULL  SYN_A|SYN_B|SYN_C  SYN_C  SHORT               -0.46626     0.99874\n\nSaved to: runtime/pipeline/signals_v3\n"
+    },
+    {
+      "stage": "audit",
+      "status": "PASS",
+      "log_tail": " SHORT\n4    FULL  03b45c4d4d5242910792  SYN_B             6.152899      0.500064              0.081273   LONG\n5    FULL  03b45c4d4d5242910792  SYN_C             6.220420     -0.466264             -0.074957  SHORT\n\nSaved: runtime/pipeline/final_audit\n"
+    },
+    {
+      "stage": "analytics",
+      "status": "PASS",
+      "log_tail": "00d99a6e4b0ad  SYN_A|SYN_B|SYN_C           2           785               2.097604  COMPUTED\n1    FULL  03b45c4d4d5242910792  SYN_A|SYN_B|SYN_C           2          2900               2.271414  COMPUTED\n\nSaved to: runtime/pipeline/dashboard_analytics\n"
+    },
+    {
+      "stage": "cross-file reconciliation",
+      "status": "PASS"
+    }
+  ]
+}
