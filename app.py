@@ -40,6 +40,37 @@ def load_data():
 
     return data, positions
 
+from audit_tools import snapshot_audit
+from formulas import FORMULAS
+import json
+
+@st.dialog("Meridian · Audit & formulas", width="large")
+def show_audit_dialog():
+    integrity, equations, review = st.tabs(["Data integrity", "LaTeX formulas", "Original-code review"])
+    with integrity:
+        report = snapshot_audit(PIPE)
+        st.caption("Read-only checks. These do not filter baskets or change original results.")
+        st.dataframe(pd.DataFrame(report["checks"]), hide_index=True, use_container_width=True)
+        st.markdown("#### Missing and infinite values")
+        if report["missing"]:
+            st.dataframe(pd.DataFrame(report["missing"]), hide_index=True, use_container_width=True)
+        else:
+            st.write("No missing or infinite cells found in the readable published result files.")
+        st.download_button("Download audit evidence", json.dumps(report, indent=2), "meridian_original_audit.json", "application/json")
+    with equations:
+        st.caption("Equations and notes describe the restored original implementation.")
+        for title, formula, explanation in FORMULAS:
+            with st.expander(title):
+                st.latex(formula)
+                st.write(explanation)
+    with review:
+        st.markdown((ROOT / "AUDIT.md").read_text())
+
+_, audit_control = st.columns([5, 1])
+with audit_control:
+    if st.button("Audit & formulas", use_container_width=True):
+        show_audit_dialog()
+
 import base64
 LOGO = base64.b64encode((ROOT / "assets/meridian-mark.svg").read_bytes()).decode()
 st.markdown("""
