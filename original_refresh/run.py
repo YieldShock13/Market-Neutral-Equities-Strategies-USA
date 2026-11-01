@@ -20,12 +20,17 @@ OUTPUTS={
 
 def main():
     os.chdir(ROOT)
+    # Rebuild the original universe exactly as the first notebook cells do.
+    context={}
+    for stage in ['listings','universe','universe_validation']:
+        print(f'Original universe stage: {stage}',flush=True)
+        context=runpy.run_path(str(ROOT/'original_refresh/stages'/f'{stage}.py'),init_globals=context,run_name='__main__')
     source=ROOT/'data/original_universe.csv'
-    if not source.exists():
-        raise FileNotFoundError('Original eligible_universe_v2.csv is required at data/original_universe.csv. No replacement universe is inferred.')
+    source.parent.mkdir(exist_ok=True)
+    shutil.copy2(ROOT/'mvou_universe/eligible_universe_v2.csv',source)
     universe=pd.read_csv(source)
     if 'YahooTicker' not in universe or universe.YahooTicker.dropna().empty:
-        raise ValueError('Original universe must contain nonempty YahooTicker column')
+        raise ValueError('Original universe screening returned no eligible YahooTicker values')
     target=latest_completed_session()
     print(f'Target completed session: {target.date()}',flush=True)
     for stage in ['download','samples','discovery','validation','specification','mvou','signals','audit','analytics']:
@@ -51,7 +56,7 @@ def main():
         shutil.copy2(path,destination)
     status={'price_date':str(target.date()),'completed_at':datetime.now(timezone.utc).isoformat(),
             'source_commit':os.environ.get('GITHUB_SHA','local'),'calculation_source':'original uploaded notebook',
-            'universe_source':'original eligible_universe_v2.csv','computed_baskets':int(signals.Status.eq('SIGNAL_COMPUTED').sum())}
+            'universe_source':'rebuilt by original notebook listings and universe-screening cells','computed_baskets':int(signals.Status.eq('SIGNAL_COMPUTED').sum())}
     (ROOT/'pipeline/refresh_status.json').write_text(json.dumps(status,indent=2))
     print(json.dumps(status),flush=True)
 

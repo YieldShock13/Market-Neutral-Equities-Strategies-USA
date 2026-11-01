@@ -6,14 +6,13 @@ on:
   push:
     paths:
       - original_refresh/**
-      - data/original_universe.csv
       - requirements-original-refresh.txt
       - .github/workflows/refresh.yml
 permissions:
   contents: write
 concurrency:
   group: meridian-original-refresh
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -23,28 +22,23 @@ jobs:
       OMP_NUM_THREADS: '1'
     steps:
       - uses: actions/checkout@v4
-      - name: Require original inputs
-        id: inputs
-        run: |
-          if [ -f data/original_universe.csv ]; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo '::error::Original eligible_universe_v2.csv has not been supplied. No refresh or publication occurred.'
-            exit 1
-          fi
       - uses: actions/setup-python@v5
-        if: steps.inputs.outputs.ready == 'true'
         with:
           python-version: '3.11'
           cache: pip
           cache-dependency-path: requirements-original-refresh.txt
       - run: pip install -r requirements-original-refresh.txt
-        if: steps.inputs.outputs.ready == 'true'
-      - run: python original_refresh/run.py
-        if: steps.inputs.outputs.ready == 'true'
+      - name: Run original notebook pipeline
+        run: |
+          mkdir -p runtime_original
+          python original_refresh/run.py 2>&1 | tee runtime_original/run.log
+      - name: Record run log
+        if: always()
+        run: |
+          if [ -f runtime_original/run.log ]; then
+            tail -n 60 runtime_original/run.log >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Publish original-model results
-        if: steps.inputs.outputs.ready == 'true'
         run: |
           git config user.name 'Meridian original refresh'
           git config user.email 'YieldShock13@users.noreply.github.com'
@@ -55,8 +49,10 @@ jobs:
             git push origin HEAD:main
           fi
       - uses: actions/upload-artifact@v4
-        if: always() && steps.inputs.outputs.ready == 'true'
+        if: always()
         with:
           name: original-model-run-evidence
-          path: runtime_original/
+          path: |
+            runtime_original/
+            mvou_universe/
           retention-days: 30

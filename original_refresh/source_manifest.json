@@ -43,5 +43,23 @@
     "notebook_cell": 21,
     "original_functions_identical": true,
     "original_cell_sha256": "882ae8fb81f49d666d4d5da6304b41998913c9193124eb2f2273f54872e22796"
+  },
+  "listings": {
+    "notebook_cell": 1,
+    "original_functions_identical": true,
+    "adaptation": "Paths and notebook package magic only",
+    "original_cell_sha256": "fea5886c0d7a95b0fc38946fe8eb4488a67ca35dbbe3109acc9022d59e6b8762"
+  },
+  "universe": {
+    "notebook_cell": 2,
+    "original_functions_identical": true,
+    "adaptation": "Paths and notebook package magic only",
+    "original_cell_sha256": "5065c2f464b916228c77ce3a5dbee374bfd0ce021a0d88a5e3c496a5c25c2e7f"
+  },
+  "universe_validation": {
+    "notebook_cell": 3,
+    "original_functions_identical": true,
+    "adaptation": "Paths and notebook package magic only; historical fixed row count assertion replaced with current row count log",
+    "original_cell_sha256": "958f8d6473b692c783f7e3ffc4ff1d0453ee1d1c453cba3e083b49153782c205"
   }
 }
