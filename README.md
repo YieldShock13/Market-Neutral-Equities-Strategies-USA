@@ -1,19 +1,11 @@
 # Meridian · Model X
 
-Maintained source for the Streamlit relative-value research screener.
+GitHub holds the maintained Streamlit app, calculation stages, refresh workflow and tests. Colab is a research copy.
 
-- `app.py`: cream/silver dashboard and top-right Audit & formulas dialog.
-- `scripts/refresh.py`: live-data refresh entry point.
-- `scripts/stages/`: calculation stages recovered from the Colab project.
-- `audit_tools.py`, `scripts/data_quality.py`, `scripts/backend_audit.py`: snapshot, raw-data and model reconciliation.
-- `formulas.py`: implemented equations and limitations.
-- `AUDIT.md`: backend findings and verification scope.
-- `tests/`: numerical regression checks.
+## Current data rule
 
-GitHub is the maintained version. Colab can import this repository for research; edits should be committed here so the deployed app and refresh use the same code.
+Exclude listings newer than the first common observed price date in January 2017. Build the common date range from the union of valid observations across the screened pack. Dates absent for everyone are not inserted. A zero return is valid; it is not a missing price. Exclude tickers missing more than 1% of peer-observed dates. Jointly omit remaining affected dates across the eligible pack; do not invent zero returns. The fitted model clock is common observation steps, not elapsed trading-day time. See AUDIT.md for implications and unresolved checks.
 
-Run `pip install -r requirements.txt -r requirements-refresh.txt`, then `python -m unittest discover -s tests -v`. For the offline synthetic integration run use `python scripts/integration_audit.py`. For a real refresh use `python scripts/refresh.py`. Synthetic prices never replace published research data.
+Run `pip install -r requirements.txt -r requirements-refresh.txt`, then `python -m unittest discover -s tests -v`. `python scripts/integration_audit.py` runs controlled integration tests without replacing live data. `python scripts/refresh.py` runs the real-data pipeline.
 
-The refresh is scheduled after US weekdays at 23:30 UTC (01:30 South African time the following day). Successful runs validate and commit results; failures preserve prior published data. GitHub schedules can be delayed. Research output is not a trading approval; see AUDIT.md for unresolved validation.
-
-Eligibility is rolling 1260 completed exchange sessions. One missing/nonfinite/nonpositive price excludes a ticker from every test horizon. See eligibility.py and the updated formula catalogue.
+The scheduled refresh runs after US weekdays at 23:30 UTC. Successful audited runs push outputs; failures retain the previous snapshot. Model reports, raw returned prices, metadata, hashes and fitted models are retained in workflow artifacts for 30 days. Source changes cancel superseded refreshes so old code cannot block or publish ahead of newer code.

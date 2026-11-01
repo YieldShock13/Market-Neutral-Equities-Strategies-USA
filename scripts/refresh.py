@@ -18,8 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'runtime'
 sys.path.insert(0,str(ROOT))
 from audit_tools import ISSUER_CLASSES
-from market_calendar import rolling_five_trading_years
-from eligibility import complete_history
+from market_calendar import completed_sessions
+from eligibility import POLICY
 
 def issuer_key(info):
     # Issuer identity, not ticker identity. Class suffixes are removed only
@@ -54,14 +54,11 @@ def fetch_security(row):
         today = SESSION_END
         # Official exchange cutoff also protects manual intraday refreshes.
         series = series.loc[series.index <= today]
-        aligned,coverage=complete_history(series,REQUIRED_CALENDAR)
-        if not coverage['Eligible5TradingYears']:
-            return dict(ticker=symbol,status='EXCLUDED',reason='Incomplete rolling 1260-session history',**coverage)
         key = issuer_key(info)
         for group in ISSUER_CLASSES:
             if symbol in group:
                 key = 'classes:' + '|'.join(sorted(group))
-        return dict(**coverage,status='ELIGIBLE',reason='Automated screens passed; security classification not independently verified',ticker=symbol, issuer=key, volume=float(info.get('averageVolume') or 0),
+        return dict(status='ELIGIBLE',reason='Automated screens passed; security classification not independently verified',ticker=symbol, issuer=key, volume=float(info.get('averageVolume') or 0),
                     series=series, name=name)
     except Exception as exc:
         print(f'{symbol}: unavailable ({type(exc).__name__})', flush=True)
@@ -82,7 +79,7 @@ def main():
     RUNTIME.mkdir(exist_ok=True)
     (RUNTIME / 'vendor').mkdir(exist_ok=True)
     (RUNTIME / 'metadata').mkdir(exist_ok=True)
-    sessions=rolling_five_trading_years()
+    sessions=completed_sessions(years=12)
     global REQUIRED_CALENDAR
     REQUIRED_CALENDAR=sessions
     global SESSION_END
@@ -133,6 +130,7 @@ def main():
     if signals.empty or not signals.Status.eq('SIGNAL_COMPUTED').any():
         raise RuntimeError('No computed signals; keeping last published results')
     shutil.copy2(RUNTIME/'data_audit.csv',RUNTIME/'pipeline/data_audit.csv')
+    shutil.copy2(RUNTIME/'omitted_sessions.csv',RUNTIME/'pipeline/omitted_sessions.csv')
     runpy.run_path(str(ROOT / 'scripts/backend_audit.py'), run_name='__main__')
     destination = ROOT / 'pipeline'
     for folder, files in {
@@ -144,7 +142,7 @@ def main():
             target = destination / folder / filename
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(RUNTIME / 'pipeline' / folder / filename, target)
-    for filename in ['issuer_audit.csv','universe_audit.csv','data_audit.csv','backend_audit.json']:
+    for filename in ['issuer_audit.csv','universe_audit.csv','data_audit.csv','backend_audit.json','omitted_sessions.csv','sample_audit.csv']:
         shutil.copy2(RUNTIME / filename, destination / filename)
     latest = pd.read_pickle(RUNTIME / 'prices_FULL.pkl').index.max()
     (destination / 'refresh_status.json').write_text(json.dumps({
@@ -152,9 +150,9 @@ def main():
         'eligible_issuers':len(selected), 'status':'success',
         'source_commit':os.environ.get('GITHUB_SHA','local'),
         'unresolved_requests':failed,
-        'eligibility_policy':'rolling_1260_complete_sessions_v1',
-        'required_sessions':1260,
-        'window_start':str(REQUIRED_CALENDAR.min().date()),
+        'eligibility_policy':POLICY,
+        'max_missing_fraction':.01,
+        'window_start':'2017-01-01',
         'window_end':str(REQUIRED_CALENDAR.max().date()),
         'universe_scope':'Current membership and market cap; not historical point-in-time membership'
     }, indent=2))

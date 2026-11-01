@@ -90,6 +90,10 @@ def show_audit_dialog():
             st.markdown("#### Fresh vendor comparison with legacy snapshot")
             st.caption("Re-downloaded today; vendor revisions can differ from the original download.")
             st.dataframe(pd.read_csv(probe), hide_index=True, use_container_width=True)
+        omissions = PIPE / "omitted_sessions.csv"
+        if omissions.exists():
+            st.markdown("#### Jointly omitted dates")
+            st.dataframe(pd.read_csv(omissions), hide_index=True, use_container_width=True)
         st.markdown("#### Missing and infinite values")
         if report["missing"]:
             st.dataframe(pd.DataFrame(report["missing"]), hide_index=True, use_container_width=True)
@@ -126,17 +130,15 @@ if status_path.exists():
 
 try:
     data, positions = load_data()
+    snapshot_file = PIPE / "dashboard_analytics/spread_history.csv"
+    if snapshot_file.exists():
+        date = pd.read_csv(snapshot_file, usecols=["Date"])["Date"].max()
+        st.caption(f"Saved research snapshot: {date}")
 except Exception as exc:
     st.error(f"Unable to load research files: {exc}")
     st.stop()
 
 data = data[data["Status"] == "SIGNAL_COMPUTED"].copy()
-# Render saved research independently of an unfinished refresh's audit artifacts.
-snapshot_file = PIPE / "dashboard_analytics/spread_history.csv"
-if snapshot_file.exists():
-    snapshot_date = pd.read_csv(snapshot_file, usecols=["Date"])["Date"].max()
-    st.caption(f"Saved research snapshot: {snapshot_date} · Revised eligibility not yet verified.")
-
 # Legacy baskets must be recalculated, never relabelled as equivalent exposures.
 import re
 legacy_duplicate = data["Basket"].map(duplicate_issuer_basket)
@@ -149,7 +151,7 @@ data["Stability"] = np.where(
 )
 
 with st.sidebar:
-    st.markdown(f'<img src="data:image/svg+xml;base64,{LOGO}" width="64" alt="Meridian" style="display:block;margin-bottom:12px;"/>', unsafe_allow_html=True)
+    st.markdown(f'<img src="data:image/svg+xml;base64,{LOGO}" width="64" alt="Meridian"/>', unsafe_allow_html=True)
     st.markdown("### Meridian")
     st.caption("MODEL X / UNIVERSE FILTERS")
 
@@ -223,6 +225,7 @@ if filtered.empty:
 
 
 
+st.caption("Missing dates are jointly omitted. Model convergence is measured in common observation steps, not elapsed trading days.")
 st.subheader("Basket Analytics")
 
 choices = {
@@ -445,7 +448,7 @@ with tab2:
         fig = px.line(
             r, x="Date", y="HalfLifeDays",
             markers=True,
-            labels={"HalfLifeDays": "Trading days"}
+            labels={"HalfLifeDays": "Common observation steps"}
         )
         shade_reliability(fig, r, h["Date"].min())
         fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360)
@@ -536,7 +539,7 @@ with tab3:
         fig.add_hline(y=0.5, line_dash="dash")
         fig.update_layout(
             height=360,
-            xaxis_title="Trading days",
+            xaxis_title="Common observation steps",
             yaxis_title="Remaining deviation magnitude"
         )
         st.plotly_chart(fig, use_container_width=True, theme=None)

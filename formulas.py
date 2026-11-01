@@ -31,11 +31,11 @@ FORMULAS = [
 ('Market proxy and portfolio risk',r'm_t=\frac1{n_H}\sum_i r_{i,t},\quad r_{p,t}=\sum_i w_i r_{i,t},\quad\beta_p=\frac{\operatorname{Cov}(r_p,m)}{\operatorname{Var}(m)},\quad R_m^2=\operatorname{Corr}(r_p,m)^2',
  'Equal-weighted eligible-universe log-return proxy for each horizon, not SPY beta. Historical constant-weight log-return approximation; net and beta exposures are displayed, not neutralised.'),
 ('Continuous-time representation',r'K=-\log(A),\quad dx=K(\mu-x)\,dt+C\,dW_t',
- 'One trading session per time unit. A real matrix logarithm alone is insufficient to certify continuous-time OU embeddability; implied diffusion CCᵀ=KΣ+ΣKᵀ must also be positive semidefinite.'),
+ 'One common observation step per time unit. A real matrix logarithm alone is insufficient to certify continuous-time OU embeddability; implied diffusion CCᵀ=KΣ+ΣKᵀ must also be positive semidefinite.'),
 ('Modal convergence',r'h_j=\frac{\log(0.5)}{\log|\lambda_j(A)|},\quad g_j(u)=|\lambda_j(A)|^u',
  'Envelope half-life only for 0<|λ|<1. Complex modes may oscillate. A zero eigenvalue has immediate one-step decay. This is not a stock-return forecast.'),
 ('Rolling component diagnostics',r'\widehat\phi,\widehat b=\operatorname{OLS}(x_{t+1}\sim x_t),\quad\mu_r=\frac{\widehat b}{1-\widehat\phi},\quad\sigma_r=\frac{\operatorname{sd}(e)}{\sqrt{1-\widehat\phi^2}},\quad h_r=\frac{\log(0.5)}{\log\widehat\phi}',
- 'Scalar AR(1) diagnostics on fixed fitted components: 252-session maximum window, 126-session minimum, every 21 sessions. They do not replace the joint MVOU model.'),
+ 'Scalar AR(1) diagnostics on fixed fitted components: 252-observation maximum window, 126-observation minimum, every 21 observations. They do not replace the joint MVOU model.'),
 ('Rolling drift and dispersion',r'\delta_r=\frac{|\mu_r-\mu|}{\sqrt{\Sigma_{jj}}},\quad v_r=\frac{\sigma_r}{\sqrt{\Sigma_{jj}}}',
  'ADF with constant and AIC lag choice. FLAGGED for missing diagnostics, invalid φ, p>0.10, δ>1.5 or v>2. RELIABLE for p≤0.05, δ≤1 and v≤1.5; otherwise WATCH. Heuristic labels, not probabilities.'),
 ('Historical rendering and training check',r't_{\rm split}=\lfloor0.8T\rfloor,\quad z_{j,t}^{\rm plotted}=\frac{B_{\cdot j}^{\top}\log P_t-\mu_j}{\sqrt{\Sigma_{jj}}}',
@@ -69,4 +69,13 @@ FORMULAS += [
  'Ranks are tested sequentially on the first 80% of observations using the previously selected lag. Full-sample basket/lag selection prevents interpreting this as independent holdout validation.'),
 ('Portfolio and stock beta decomposition',r'\beta_i=\frac{\operatorname{Cov}(r_i,m)}{\operatorname{Var}(m)},\quad\beta_p=\sum_iw_i\beta_i,\quad R_m^2=\frac{\operatorname{Cov}(r_p,m)^2}{\operatorname{Var}(r_p)\operatorname{Var}(m)}',
  'Covariance and variance use the same aligned observations and ddof=1. The reported market-explained variance is 100R²; no beta neutrality is enforced.'),
+]
+
+
+# Current policy overrides superseded rolling-window descriptions.
+FORMULAS=[item for item in FORMULAS if item[0] not in {'Universe and samples','Complete-case sample','Rolling trading-year clock','Hard global eligibility gate','Horizon slicing after eligibility'}]
+FORMULAS[:0]=[
+('January 2017 cutoff',r't_0=\min\{t\ge\mathrm{2017\! -\! 01\! -\! 01}:\exists i, P_{i,t}\in(0,\infty)\},\quad t_i^{\rm first}\le t_0','Exclude late listings entirely. The cutoff is the first common observed price date from January 2017.'),
+('Peer-relative missing fraction',r'\mathcal T=\bigcup_i\{t:P_{i,t}\in(0,\infty)\},\quad m_i=\frac{\sum_{t\in\mathcal T}\mathbf 1[P_{i,t}\ \mathrm{missing}]}{|\mathcal T|}\le0.01','Use peer-observed dates since the cutoff. Dates absent for all names are not inserted. An unchanged valid price is not missing. Missing/nonfinite/nonpositive values fail that observation.'),
+('Joint observed-date clock',r'\mathcal T^*=\{t\in\mathcal T:\forall i\in\mathcal U, P_{i,t}\in(0,\infty)\}','After ticker screening, jointly omit remaining affected dates. No zero changes are invented. VAR/OU-step dynamics and half-lives are in common observation steps, not elapsed trading days; historical date gaps are retained for audit.'),
 ]

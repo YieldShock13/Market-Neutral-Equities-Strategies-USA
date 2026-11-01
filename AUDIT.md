@@ -67,3 +67,10 @@ The previous implementation checked completeness separately per horizon, which c
 ## Current minimum — five trading years
 
 The latest user instruction supersedes the ten-year rule: eligibility now requires at least **1260 consecutive completed exchange sessions (5 × 252)**, with no missing, nonfinite or nonpositive prices anywhere in that rolling window. Any failure excludes the ticker from every horizon. The window is recalculated at run time. FULL currently covers the complete retained five-year eligibility window, so it matches 5Y. Formula labels, evidence fields, tests and the refresh policy are updated together. Missing verification evidence is not proof that the eligible universe is empty.
+
+
+## Current policy — January 2017 and peer-relative gaps
+
+Supersedes both rolling-session policies. Only tickers observed by the first common price date in January 2017 qualify. Expected dates are the union of valid observed prices in the screened pack from January 2017 onward. Dates absent for everyone are not inserted or labelled as holidays; universe-wide source outages remain an audit limitation. Zero returns remain valid. A ticker with over 1% missing prices on peer-observed dates is excluded. Late listings are excluded even if their missing fraction is small.
+
+After ticker eligibility, dates with any remaining gap are jointly omitted across the eligible pack. Every model uses that same observed-date clock. No prices are forward-filled and no synthetic zero returns are added. Because omissions produce gaps in elapsed time, the fitted discrete model and half-lives are explicitly measured in common observation steps. They are not certified as a constant-parameter OU process in elapsed trading-day time. A time-aware irregular-interval OU fit and appropriate cointegration treatment would be required for that stronger interpretation. Reports retain omitted date counts; substantial joint date loss remains a limitation.

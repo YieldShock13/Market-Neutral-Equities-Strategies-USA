@@ -16,7 +16,7 @@ sys.path.insert(0,str(ROOT))
 
 def main():
     rng=np.random.default_rng(1024)
-    dates=pd.bdate_range(end=pd.Timestamp.now().normalize(),periods=2900)
+    dates=pd.bdate_range('2016-01-04',end=pd.Timestamp.now().normalize())
     trend=4+np.cumsum(rng.normal(0,.02,len(dates)))
     prices={}
     for ticker in ['SYN_A','SYN_B','SYN_C']:
@@ -31,7 +31,7 @@ def main():
         pd.Series(dates[-1260:],name='Date').to_csv(root/'calendar.csv',index=False)
         for ticker in frame:
             frame[ticker].to_csv(root/'prices'/f'{ticker}.csv')
-        damaged=frame.iloc[:,0].copy();damaged.iloc[-1200]=np.nan
+        damaged=frame.iloc[:,0].copy();damaged.iloc[-100:]=np.nan
         damaged.to_csv(root/'prices/SYN_GAP.csv')
         try:
             for stage in ['samples','discovery','validation','specification','mvou','signals','audit','analytics']:

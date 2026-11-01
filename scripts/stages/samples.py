@@ -1,40 +1,24 @@
-"""Global rolling five-trading-year gate, applied before all model horizons."""
+"""Observed common calendar, fixed January 2017 cutoff and <=1% missing."""
 from pathlib import Path
-import numpy as np
 import pandas as pd
-from eligibility import complete_history,REQUIRED_SESSIONS,TRADING_SESSIONS_PER_YEAR
-
+from eligibility import screen_pack
 ROOT=Path('runtime')
-calendar_file=ROOT/'calendar.csv'
-if not calendar_file.exists():
-    raise ValueError('Missing official completed-session calendar; refusing to infer one from available prices')
-calendar=pd.DatetimeIndex(pd.to_datetime(pd.read_csv(calendar_file)['Date']))
-if len(calendar)!=REQUIRED_SESSIONS or not calendar.is_unique or not calendar.is_monotonic_increasing:
-    raise ValueError('Reference calendar must contain exactly 1260 ordered unique completed sessions')
-prices={};audit=[]
-for path in sorted((ROOT/'prices').glob('*.csv')):
-    try:
-        frame=pd.read_csv(path,index_col=0)
-        aligned,record=complete_history(frame.iloc[:,0],calendar)
-        record['Ticker']=path.stem
-        if record['Eligible5TradingYears']:
-            prices[path.stem]=aligned
-    except Exception as exc:
-        record={'Ticker':path.stem,'Eligible5TradingYears':False,'Error':str(exc)}
-    audit.append(record)
-pd.DataFrame(audit).to_csv(ROOT/'data_audit.csv',index=False)
-if not prices:
-    raise ValueError('No ticker has complete positive finite data for the entire rolling 1260-session window')
-matrix=pd.DataFrame(prices,index=calendar)
+series={path.stem:pd.read_csv(path,index_col=0).iloc[:,0] for path in (ROOT/'prices').glob('*.csv')}
+matrix,audit=screen_pack(series)
+audit.to_csv(ROOT/'data_audit.csv',index=False)
+if matrix.empty:raise ValueError('No securities passed January 2017 / 1% missing-data rule')
+# Use the same observed dates for ALL securities. Never invent zero changes.
+removed=matrix.index[matrix.isna().any(axis=1)]
+pd.DataFrame({'Date':removed,'Reason':'At least one eligible ticker missing; jointly omitted'}).to_csv(ROOT/'omitted_sessions.csv',index=False)
+matrix=matrix.dropna(how='any')
+if len(matrix)<126:raise ValueError('Too few jointly complete observations after date omission')
 matrix.index.name='Date'
-assert matrix.notna().all().all() and np.isfinite(matrix.to_numpy(float)).all() and matrix.gt(0).all().all()
 matrix.to_pickle(ROOT/'adjusted_price_matrix.pkl')
 summary=[]
-for horizon,years in [('1Y',1),('3Y',3),('5Y',5),('FULL',5)]:
-    sample=matrix.iloc[-years*TRADING_SESSIONS_PER_YEAR:].copy()
-    # Every horizon shares the exact same globally eligible ticker set.
-    assert sample.columns.equals(matrix.columns)
+for horizon,years in [('1Y',1),('3Y',3),('5Y',5),('FULL',None)]:
+    sample=matrix.copy() if years is None else matrix.loc[matrix.index>=matrix.index.max()-pd.DateOffset(years=years)].copy()
+    if len(sample)<100:raise ValueError(f'{horizon}: fewer than 100 jointly observed prices')
     sample.to_pickle(ROOT/f'prices_{horizon}.pkl')
-    summary.append({'Sample':horizon,'Start':str(sample.index.min().date()),'End':str(sample.index.max().date()),'TradingDays':len(sample),'CompleteStocks':sample.shape[1]})
+    summary.append({'Sample':horizon,'Start':str(sample.index.min().date()),'End':str(sample.index.max().date()),'ObservedSteps':len(sample),'Stocks':sample.shape[1],'JointlyOmittedDates':len(removed),'Clock':'common-observation steps, not elapsed trading days'})
 pd.DataFrame(summary).to_csv(ROOT/'sample_audit.csv',index=False)
 print(pd.DataFrame(summary).to_string(index=False))

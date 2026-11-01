@@ -20,23 +20,21 @@ class AuditTests(unittest.TestCase):
     def test_removed_banner_stays_removed(self):
         self.assertNotIn('First automated refresh pending',(ROOT/'app.py').read_text())
 
-    def test_full_rolling_history_gate(self):
-        from eligibility import complete_history
-        dates=pd.bdate_range(end='2026-10-30',periods=3000)
-        prices=pd.Series(np.arange(3000)+100.,index=dates)
-        aligned,report=complete_history(prices,dates)
-        self.assertTrue(report['Eligible5TradingYears'])
-        self.assertEqual(len(aligned),1260)
-        # Gap far outside the 1Y/3Y/5Y samples still blocks ALL horizons.
-        missing=prices.drop(dates[-1200])
-        self.assertFalse(complete_history(missing,dates)[1]['Eligible5TradingYears'])
-        self.assertEqual(complete_history(missing,dates)[1]['Missing'],1)
-        self.assertFalse(complete_history(prices.iloc[-1259:],dates)[1]['Eligible5TradingYears'])
-        damaged=prices.copy();damaged.loc[dates[-1200]]=np.nan
-        self.assertFalse(complete_history(damaged,dates)[1]['Eligible5TradingYears'])
-        # Data older than the rolling window is irrelevant.
-        self.assertTrue(complete_history(prices.drop(dates[0]),dates)[1]['Eligible5TradingYears'])
-        self.assertEqual(complete_history(prices,dates[:-1])[0].index[-1],dates[-2])
+    def test_fixed_cutoff_and_peer_relative_gaps(self):
+        from eligibility import screen_pack
+        dates=pd.bdate_range('2017-01-03',periods=1000)
+        base=pd.Series(100.,index=dates)
+        okay=base.copy();okay.iloc[50]=np.nan
+        bad=base.copy();bad.iloc[10:21]=np.nan
+        late=base.iloc[1:]
+        unchanged=base.copy()
+        matrix,audit=screen_pack({'BASE':base,'ONE_GAP':okay,'TOO_MANY':bad,'LATE':late,'UNCHANGED':unchanged})
+        self.assertEqual(set(matrix.columns),{'BASE','ONE_GAP','UNCHANGED'})
+        self.assertEqual(audit.set_index('Ticker').loc['ONE_GAP','Missing'],1)
+        # A date absent for everyone is not an individual missing observation.
+        pack={k:v.drop(dates[70],errors='ignore') for k,v in {'A':base,'B':okay}.items()}
+        _,proof=screen_pack(pack)
+        self.assertEqual(proof.set_index('Ticker').loc['A','Missing'],0)
 
     def test_completed_session_cutoff(self):
         from market_calendar import completed_sessions
