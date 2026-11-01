@@ -43,7 +43,7 @@ print("Download start:", start)
 print("Destination:", ROOT)
 
 def fetch_batch(tickers, start_date, end_date):
-    return yf.download(
+    data = yf.download(
         tickers=tickers,
         start=start_date,
         end=end_date,
@@ -55,6 +55,8 @@ def fetch_batch(tickers, start_date, end_date):
         progress=False,
         repair=False
     )
+    from original_refresh.yahoo_transport import normalize_download
+    return normalize_download(data, tickers)
 
 def extract_adjusted(data, symbol, batch_size):
     if batch_size == 1:

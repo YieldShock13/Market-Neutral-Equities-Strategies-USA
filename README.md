@@ -11,3 +11,7 @@ Original calculation functions are preserved from the supplied Colab notebook. M
 The workflow runs at 23:30 UTC after US weekdays (01:30 SAST the next morning), plus manual runs and changes to the runner or original input file. Publication requires the output date to match the latest completed reference session and all eight output files to be readable and nonempty. Download or calculation failures stop publication and leave previous app data in place. A failed setup is not a successful model refresh.
 
 Current displayed CSVs are the restored historical results until the first successful refresh. The original source is in research/original_colab.py, with an embedded credential redacted. The original notebook's existing modelling limitations are documented in AUDIT.md; automation does not certify trading reliability or alter the methodology.
+
+## Current operation: manual refresh only
+
+The recurring schedule is disabled. The current one-off run targets the latest completed US session. Future refreshes can be started manually, including weekly. The only changed original function is the Yahoo download adapter fetch_batch, to normalise single-ticker nested columns. No statistical functions or front-end calculation functions changed. Yahoo network calls have bounded retry/backoff; persistent failures stop the entire run rather than silently shrinking the universe. Shell pipe failure propagation is enabled.

@@ -20,11 +20,18 @@ OUTPUTS={
 
 def main():
     os.chdir(ROOT)
+    from original_refresh.yahoo_transport import install_retries
+    install_retries()
     # Rebuild the original universe exactly as the first notebook cells do.
     context={}
     for stage in ['listings','universe','universe_validation']:
         print(f'Original universe stage: {stage}',flush=True)
         context=runpy.run_path(str(ROOT/'original_refresh/stages'/f'{stage}.py'),init_globals=context,run_name='__main__')
+    screening=pd.read_csv(ROOT/'mvou_universe/universe_full_audit_v2.csv')
+    reasons=screening['Reason'].fillna('').astype(str)
+    unresolved=reasons.str.contains('RateLimit|Too Many Requests|429',case=False,regex=True)
+    if unresolved.any():
+        raise RuntimeError(f'{int(unresolved.sum())} securities still affected by Yahoo throttling; refusing a silently reduced universe')
     source=ROOT/'data/original_universe.csv'
     source.parent.mkdir(exist_ok=True)
     shutil.copy2(ROOT/'mvou_universe/eligible_universe_v2.csv',source)

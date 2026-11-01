@@ -1,12 +1,9 @@
 name: Original Meridian daily refresh
 on:
-  schedule:
-    - cron: '30 23 * * 1-5'
   workflow_dispatch:
   push:
     paths:
-      - original_refresh/**
-      - requirements-original-refresh.txt
+      - original_refresh/manual_trigger.txt
 permissions:
   contents: write
 concurrency:

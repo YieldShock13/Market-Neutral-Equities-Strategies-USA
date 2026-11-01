@@ -1,8 +1,9 @@
 {
   "download": {
     "notebook_cell": 4,
-    "original_functions_identical": true,
-    "original_cell_sha256": "a4224e2203d7a3a0be72701d6c54240c4b4099dd48fd31b77b5b738ef507152f"
+    "original_functions_identical": false,
+    "original_cell_sha256": "a4224e2203d7a3a0be72701d6c54240c4b4099dd48fd31b77b5b738ef507152f",
+    "adaptation": "Only fetch_batch changed: normalize Yahoo single-ticker column layout. All statistical and remaining original functions identical."
   },
   "samples": {
     "notebook_cell": 5,
