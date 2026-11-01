@@ -7,7 +7,6 @@ on:
     paths:
       - original_refresh/**
       - requirements-original-refresh.txt
-      - .github/workflows/refresh.yml
 permissions:
   contents: write
 concurrency:
@@ -20,6 +19,7 @@ jobs:
     env:
       OPENBLAS_NUM_THREADS: '1'
       OMP_NUM_THREADS: '1'
+      PYTHONUNBUFFERED: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,6 +30,7 @@ jobs:
       - run: pip install -r requirements-original-refresh.txt
       - name: Run original notebook pipeline
         run: |
+          set -euo pipefail
           mkdir -p runtime_original
           python original_refresh/run.py 2>&1 | tee runtime_original/run.log
       - name: Record run log
