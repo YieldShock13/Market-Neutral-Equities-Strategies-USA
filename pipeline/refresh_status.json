@@ -1,0 +1,8 @@
+{
+  "price_date": "2026-10-30",
+  "completed_at": "2026-11-01T15:39:35.069895+00:00",
+  "source_commit": "09a8bddb884dc128a9da6a8f9ebcde8785a01fc6",
+  "calculation_source": "original uploaded notebook",
+  "universe_source": "rebuilt by original notebook listings and universe-screening cells",
+  "computed_baskets": 30
+}
