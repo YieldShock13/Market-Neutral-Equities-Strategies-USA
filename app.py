@@ -40,20 +40,39 @@ def load_data():
 
     return data, positions
 
+import base64
+LOGO = base64.b64encode((ROOT / "assets/meridian-mark.svg").read_bytes()).decode()
 st.markdown("""
 <style>
-.block-container {max-width:1480px;padding-top:2.2rem;}
-[data-testid="stSidebar"] {border-right:1px solid #29404b;}
-[data-testid="stMetric"] {background:#14212b;border:1px solid #29404b;border-radius:12px;padding:18px;}
-[data-testid="stMetricLabel"] {text-transform:uppercase;letter-spacing:.12em;font-size:.7rem;}
-h1,h2,h3 {font-weight:400 !important;letter-spacing:.025em;}
-.meridian-header {position:relative;overflow:hidden;border:1px solid #36505c;background:linear-gradient(115deg,#172c37,#0c141b);padding:36px 40px;border-radius:16px;margin-bottom:24px;}
-.meridian-header:after {content:"";position:absolute;width:330px;height:330px;right:60px;top:-110px;border:1px solid #bda37166;border-radius:50%;box-shadow:0 0 0 35px #bda37109,0 0 0 70px #bda37108,0 0 0 105px #bda37106;pointer-events:none;}
-.brand {font-family:Georgia,serif;font-size:clamp(36px,6vw,66px);letter-spacing:.18em;color:#e9edf0;line-height:1.2;}
-.model {color:#bda371;font-size:15px;letter-spacing:.32em;text-transform:uppercase;margin-top:12px;}
-.descriptor {color:#a5b7c0;margin-top:18px;font-size:14px;}
+.block-container {max-width:1460px;padding:2.5rem 3.2rem 4rem;}
+.stApp {background:radial-gradient(ellipse at 85% 0%,#eeeee8 0%,#f6f3eb 52%);}
+[data-testid="stHeader"] {background:transparent;}
+[data-testid="stSidebar"] {background:#ebe8df;border-right:1px solid #d0d2cc;}
+[data-testid="stSidebar"] .block-container {padding-top:2rem;}
+[data-testid="stMetric"] {background:linear-gradient(135deg,#fbfaf6,#f0eee7);border:1px solid #d4d7d2;border-radius:3px;padding:23px 25px;box-shadow:0 4px 16px #343e4405;}
+[data-testid="stMetricLabel"] {color:#657078;text-transform:uppercase;letter-spacing:.14em;font-size:.68rem;}
+[data-testid="stMetricValue"] {font-family:Georgia,serif;font-weight:400;color:#35434c;}
+h1,h2,h3 {font-family:Georgia,serif !important;font-weight:400 !important;letter-spacing:.015em;color:#35434c;}
+h3 {font-size:1.5rem !important;margin-top:1.6rem !important;}
+.meridian-header {position:relative;overflow:hidden;padding:38px 40px 34px;border-top:1px solid #aeb7ba;border-bottom:1px solid #bfc5c4;margin-bottom:22px;}
+.meridian-header:after {content:"";position:absolute;width:420px;height:420px;right:-40px;top:-175px;border:1px solid #a2adb340;border-radius:50%;box-shadow:0 0 0 38px #a2adb310,0 0 0 76px #a2adb30c,0 0 0 114px #a2adb308;pointer-events:none;}
+.identity {display:flex;align-items:center;gap:24px;position:relative;z-index:1;}
+.identity img {width:104px;height:104px;}
+.brand {font-family:Georgia,'Times New Roman',serif;font-size:clamp(30px,4.5vw,58px);letter-spacing:.19em;color:#35434c;line-height:1.15;}
+.model {color:#737f86;font-size:11px;letter-spacing:.4em;text-transform:uppercase;margin-top:12px;}
+.descriptor {color:#727a7d;margin-top:25px;font-size:12px;letter-spacing:.08em;}
+.edition {position:absolute;right:40px;bottom:34px;font-size:10px;color:#849096;letter-spacing:.22em;text-transform:uppercase;}
+[data-baseweb="tab-list"] {gap:26px;border-bottom:1px solid #cdd1cd;}
+[data-baseweb="tab"] {font-size:12px;letter-spacing:.035em;}
+[data-baseweb="tab-highlight"] {background:#7e8d96;height:2px;}
+[data-testid="stDataFrame"] {border:1px solid #d4d7d2;border-radius:3px;}
+[data-testid="stCaptionContainer"] {color:#778187;}
+[data-testid="stAlert"] {border-radius:3px;background:#eceee9;}
+@media(max-width:700px) {.block-container{padding:1.5rem 1rem;}.meridian-header{padding:24px 12px;}.identity{gap:12px;}.identity img{width:68px;height:68px;}.brand{letter-spacing:.1em;}.edition{display:none;}.descriptor{font-size:10px;}}
 </style>
-<div class="meridian-header"><div class="brand">MERIDIAN</div><div class="model">Model X</div><div class="descriptor">Market-neutral equities · Relative value research</div></div>
+""", unsafe_allow_html=True)
+st.markdown(f"""
+<div class="meridian-header"><div class="identity"><img src="data:image/svg+xml;base64,{LOGO}" alt="Meridian globe and M monogram"/><div><div class="brand">MERIDIAN</div><div class="model">Model X</div></div></div><div class="descriptor">Market-neutral equities &nbsp; / &nbsp; Relative value research</div><div class="edition">Equities / United States</div></div>
 """, unsafe_allow_html=True)
 import json
 status_path = PIPE / "refresh_status.json"
@@ -84,6 +103,7 @@ data["Stability"] = np.where(
 )
 
 with st.sidebar:
+    st.image(str(ROOT / "assets/meridian-mark.svg"), width=64)
     st.markdown("### Meridian")
     st.caption("MODEL X / UNIVERSE FILTERS")
 
@@ -221,6 +241,17 @@ rolling = rolling.sort_values(["Component", "Date"])
 
 import plotly.graph_objects as go
 import plotly.express as px
+import plotly.io as pio
+pio.templates["meridian"] = go.layout.Template(
+    layout=dict(paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6",
+                font=dict(family="Arial, sans-serif", color="#46545c", size=12),
+                colorway=["#657c8b", "#a5aeb1", "#9b907b", "#445b67"],
+                xaxis=dict(gridcolor="#e2e3dc", zerolinecolor="#c7cecc"),
+                yaxis=dict(gridcolor="#e2e3dc", zerolinecolor="#c7cecc"),
+                margin=dict(l=24,r=24,t=32,b=32),
+                hoverlabel=dict(bgcolor="#fbfaf6",font_color="#35434c")))
+pio.templates.default = "plotly_white+meridian"
+
 
 COLORS = {
     "RELIABLE": "rgba(28,160,95,0.16)",
@@ -290,12 +321,12 @@ with tab1:
     fig.add_trace(go.Scatter(
         x=h["Date"], y=h["Spread"],
         name="Observed spread",
-        line=dict(color="#3378d4", width=2)
+        line=dict(color="#657c8b", width=2)
     ))
     fig.add_trace(go.Scatter(
         x=h["Date"], y=h["Equilibrium"],
         name="Fitted equilibrium",
-        line=dict(color="#222222", dash="dash")
+        line=dict(color="#525e65", dash="dash")
     ))
 
     for n, dash in [(1, "dot"), (2, "dash"), (3, "longdash")]:
@@ -303,7 +334,7 @@ with tab1:
             fig.add_trace(go.Scatter(
                 x=h["Date"], y=h[f"{side}{n}"],
                 name=f"{sign}{n}σ",
-                line=dict(color="#999999", dash=dash, width=1),
+                line=dict(color="#a2aaad", dash=dash, width=1),
                 legendgroup=f"band{n}",
                 showlegend=(sign == "+")
             ))
@@ -315,7 +346,7 @@ with tab1:
         yaxis_title="Log-price cointegrating spread",
         legend=dict(orientation="h")
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.markdown("#### Historical standardized deviation")
 
@@ -324,14 +355,14 @@ with tab1:
     zfig.add_trace(go.Scatter(
         x=h["Date"], y=h["ZScore"],
         name="Spread z-score",
-        line=dict(color="#3378d4")
+        line=dict(color="#657c8b")
     ))
 
     for level in [-3, -2, -1, 0, 1, 2, 3]:
         zfig.add_hline(
             y=level,
             line_dash="solid" if level == 0 else "dot",
-            line_color="#888888",
+            line_color="#99a3a8",
             line_width=1
         )
 
@@ -340,7 +371,7 @@ with tab1:
         yaxis_title="Standard deviations",
         hovermode="x unified"
     )
-    st.plotly_chart(zfig, use_container_width=True)
+    st.plotly_chart(zfig, use_container_width=True, theme=None)
 
     st.metric("Latest component z-score", f"{h['ZScore'].iloc[-1]:+.3f}")
     st.caption(
@@ -371,8 +402,8 @@ with tab2:
             labels={"HalfLifeDays": "Trading days"}
         )
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360)
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.markdown("#### Equilibrium stability")
         fig = go.Figure()
@@ -387,8 +418,8 @@ with tab2:
             name="Dispersion ratio"
         ))
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360, hovermode="x unified")
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360, hovermode="x unified")
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.markdown("#### Rolling stationarity diagnostics")
         fig = px.line(
@@ -398,8 +429,8 @@ with tab2:
         fig.add_hline(y=0.05, line_dash="dash")
         fig.add_hline(y=0.10, line_dash="dot")
         shade_reliability(fig, r, h["Date"].min())
-        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=340)
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=340)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.dataframe(
             r[[
@@ -422,11 +453,11 @@ with tab3:
             pivot,
             text_auto=".4f",
             aspect="auto",
-            color_continuous_scale="RdBu_r",
+            color_continuous_scale=["#748a99", "#f6f3eb", "#a29383"],
             color_continuous_midpoint=0
         )
-        fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360)
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.markdown("#### Stationary eigenmodes")
 
@@ -462,7 +493,7 @@ with tab3:
             xaxis_title="Trading days",
             yaxis_title="Remaining deviation magnitude"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.caption(
         "These are fitted stationary-spread dynamics. "
@@ -490,12 +521,12 @@ with tab4:
         p, x="Ticker", y="DollarWeight",
         color="Side",
         color_discrete_map={
-            "LONG": "#15996c",
-            "SHORT": "#dc5555"
+            "LONG": "#627d76",
+            "SHORT": "#a1877e"
         }
     )
-    fig.update_layout(template="plotly_dark", paper_bgcolor="#0c141b", plot_bgcolor="#0c141b", height=360)
-    st.plotly_chart(fig, use_container_width=True)
+    fig.update_layout(template="plotly_white+meridian", paper_bgcolor="#f6f3eb", plot_bgcolor="#fbfaf6", height=360)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.write(
         f"**Market-explained variance:** "
