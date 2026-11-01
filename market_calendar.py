@@ -14,7 +14,7 @@ def completed_sessions(now=None, years=11):
     return index.tz_localize(None).normalize() if index.tz is not None else index.normalize()
 
 
-def rolling_ten_trading_years(now=None):
+def rolling_five_trading_years(now=None):
     from eligibility import REQUIRED_SESSIONS
     sessions=completed_sessions(now,years=12)
     if len(sessions)<REQUIRED_SESSIONS:

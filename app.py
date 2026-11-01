@@ -137,11 +137,11 @@ verified_tickers = set()
 proof_path = PIPE / "data_audit.csv"
 if status_path.exists() and proof_path.exists():
     manifest = json.loads(status_path.read_text())
-    if manifest.get("eligibility_policy") == "rolling_2520_complete_sessions_v1":
+    if manifest.get("eligibility_policy") == "rolling_1260_complete_sessions_v1":
         proof = pd.read_csv(proof_path)
-        if "Eligible10TradingYears" in proof and "Ticker" in proof:
-            passed = proof["Eligible10TradingYears"].astype(str).str.lower().eq("true")
-            passed &= proof["RequiredSessions"].eq(2520)
+        if "Eligible5TradingYears" in proof and "Ticker" in proof:
+            passed = proof["Eligible5TradingYears"].astype(str).str.lower().eq("true")
+            passed &= proof["RequiredSessions"].eq(1260)
             passed &= proof["WindowEnd"].eq(manifest.get("window_end"))
             verified_tickers = set(proof.loc[passed, "Ticker"])
 data = data.loc[data["Basket"].map(lambda basket: set(str(basket).split("|")).issubset(verified_tickers))].copy()
@@ -227,7 +227,7 @@ st.dataframe(
 )
 
 if filtered.empty:
-    st.info("No baskets have verified complete ten-trading-year data under the selected filters.")
+    st.info("No baskets have verified complete five-trading-year data under the selected filters.")
     st.stop()
 
 

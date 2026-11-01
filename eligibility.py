@@ -3,12 +3,12 @@ import numpy as np
 import pandas as pd
 
 TRADING_SESSIONS_PER_YEAR=252
-REQUIRED_SESSIONS=10*TRADING_SESSIONS_PER_YEAR
+REQUIRED_SESSIONS=5*TRADING_SESSIONS_PER_YEAR
 
 def complete_history(series, calendar):
     calendar=pd.DatetimeIndex(calendar)
     if len(calendar)<REQUIRED_SESSIONS:
-        raise ValueError('Fewer than 2520 completed exchange sessions in the reference calendar')
+        raise ValueError('Fewer than 1260 completed exchange sessions in the reference calendar')
     window=calendar[-REQUIRED_SESSIONS:]
     series=series.copy()
     series.index=pd.to_datetime(series.index,errors='coerce')
@@ -26,5 +26,5 @@ def complete_history(series, calendar):
             'Infinite':int(np.isinf(values).sum()),'Nonpositive':int((values<=0).sum()),
             'DuplicateDates':duplicates,'InvalidDates':invalid_dates}
     passed=all(counts[key]==0 for key in ['Missing','Infinite','Nonpositive','DuplicateDates','InvalidDates'])
-    counts['Eligible10TradingYears']=passed
+    counts['Eligible5TradingYears']=passed
     return aligned,counts

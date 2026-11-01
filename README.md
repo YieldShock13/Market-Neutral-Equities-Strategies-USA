@@ -16,4 +16,4 @@ Run `pip install -r requirements.txt -r requirements-refresh.txt`, then `python 
 
 The refresh is scheduled after US weekdays at 23:30 UTC (01:30 South African time the following day). Successful runs validate and commit results; failures preserve prior published data. GitHub schedules can be delayed. Research output is not a trading approval; see AUDIT.md for unresolved validation.
 
-Eligibility is rolling 2520 completed exchange sessions. One missing/nonfinite/nonpositive price excludes a ticker from every test horizon. See eligibility.py and the updated formula catalogue.
+Eligibility is rolling 1260 completed exchange sessions. One missing/nonfinite/nonpositive price excludes a ticker from every test horizon. See eligibility.py and the updated formula catalogue.

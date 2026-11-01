@@ -1,9 +1,9 @@
 """Formula catalogue tied to the actual calculation stages."""
 FORMULAS = [
-('Universe and samples',r'\mathcal U_t=\{i:\operatorname{cap}_{i,t}\ge 2\times10^9,\ \operatorname{complete}_{i,t}(2520)=1\}',
- 'Current NYSE/Nasdaq listings and current market capitalisation; US domicile and security-type screens. Mandatory complete positive finite prices across the last 2520 completed sessions before ANY horizon test. Historical point-in-time membership is not reconstructed. One eligible share class per issuer.'),
+('Universe and samples',r'\mathcal U_t=\{i:\operatorname{cap}_{i,t}\ge 2\times10^9,\ \operatorname{complete}_{i,t}(1260)=1\}',
+ 'Current NYSE/Nasdaq listings and current market capitalisation; US domicile and security-type screens. Mandatory complete positive finite prices across the last 1260 completed sessions before ANY horizon test. Historical point-in-time membership is not reconstructed. One eligible share class per issuer.'),
 ('Complete-case sample',r'\mathcal U_H=\{i:\forall t\in\mathcal T_H,\ P_{i,t}\in\mathbb R,\ 0<P_{i,t}<\infty\}',
- 'The last 2520 officially completed exchange sessions define the common calendar. A single missing, nonfinite or nonpositive observation rejects the ticker from ALL horizons. No forward fill, backfill, interpolation or horizon-specific readmission.'),
+ 'The last 1260 officially completed exchange sessions define the common calendar. A single missing, nonfinite or nonpositive observation rejects the ticker from ALL horizons. No forward fill, backfill, interpolation or horizon-specific readmission.'),
 ('Daily log returns and standardisation',r'r_{i,t}=\log P_{i,t}-\log P_{i,t-1},\quad z_{i,t}=\frac{r_{i,t}-\bar r_i}{\sqrt{T^{-1}\sum_t(r_{i,t}-\bar r_i)^2}}',
  'Adjusted close is used for research; StandardScaler uses population variance. Constant series are removed before correlation and discovery.'),
 ('Correlation prefilter',r'\rho_{ij}=T^{-1}z_i^\top z_j,\quad |\rho_{ij}|\ge0.30',
@@ -43,12 +43,12 @@ FORMULAS = [
 ]
 
 FORMULAS += [
-('Rolling trading-year clock',r'\mathcal T_t^{10}=\{s_{n-2519},\ldots,s_n\},\quad s_n=\max\{s:\operatorname{close}_{NYSE}(s)\le t\},\quad 10\times252=2520',
- 'Ten trading years means exactly 2520 completed exchange sessions, recalculated from the run time; no fixed start date. Holidays and early closes come from the exchange calendar.'),
-('Hard global eligibility gate',r'E_{i,t}=\mathbf 1\!\left[\forall s\in\mathcal T_t^{10}:P_{i,s}\in(0,\infty),\ P_{i,s}\ne\mathrm{NA};\ \text{dates unique}\right]',
+('Rolling trading-year clock',r'\mathcal T_t^{5}=\{s_{n-1259},\ldots,s_n\},\quad s_n=\max\{s:\operatorname{close}_{NYSE}(s)\le t\},\quad 5\times252=1260',
+ 'Five trading years means exactly 1260 completed exchange sessions, recalculated from the run time; no fixed start date. Holidays and early closes come from the exchange calendar.'),
+('Hard global eligibility gate',r'E_{i,t}=\mathbf 1\!\left[\forall s\in\mathcal T_t^{5}:P_{i,s}\in(0,\infty),\ P_{i,s}\ne\mathrm{NA};\ \text{dates unique}\right]',
  'Missing sessions are identified by reindexing against the official calendar, not by counting available rows. Any failure removes the ticker before discovery, all statistical tests and every horizon.'),
-('Horizon slicing after eligibility',r'\mathcal U_t^H=\{i:E_{i,t}=1\},\quad |\mathcal T^H|=252H,\quad H\in\{1,3,5,10\}',
- 'All horizons contain identical eligible tickers. FULL is the complete rolling 2520-session window. Shorter windows use the last 252, 756 or 1260 sessions, never a separate eligibility screen.'),
+('Horizon slicing after eligibility',r'\mathcal U_t^H=\{i:E_{i,t}=1\},\quad |\mathcal T^H|=252H,\quad H\in\{1,3,5\}',
+ 'All horizons contain identical eligible tickers. FULL is the complete rolling 1260-session window. Shorter windows use the last 252, 756 or 1260 sessions, never a separate eligibility screen.'),
 ('Normalisation and orientation of vectors',r'\widetilde b_j=\frac{b_j}{\|b_j\|_2},\quad k=\arg\max_i|\widetilde b_{ij}|,\quad B_{\cdot j}=\operatorname{sign}(\widetilde b_{kj})\widetilde b_j',
  'Vectors are unit Euclidean norm; the largest absolute coefficient is positive. Coefficients are recorded in the exact ticker order used to construct the spread.'),
 ('Explicit OLS matrix solution',r'D=[\mathbf 1,X_{0:T-1}],\quad\widehat\Theta=D^+X_{1:T},\quad c=\widehat\Theta_{0,:}^{\top},\quad A=\widehat\Theta_{1:,:}^{\top}',

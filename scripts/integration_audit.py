@@ -28,10 +28,10 @@ def main():
     with tempfile.TemporaryDirectory() as directory:
         os.chdir(directory)
         root=Path('runtime');(root/'prices').mkdir(parents=True)
-        pd.Series(dates[-2520:],name='Date').to_csv(root/'calendar.csv',index=False)
+        pd.Series(dates[-1260:],name='Date').to_csv(root/'calendar.csv',index=False)
         for ticker in frame:
             frame[ticker].to_csv(root/'prices'/f'{ticker}.csv')
-        damaged=frame.iloc[:,0].copy();damaged.iloc[-2400]=np.nan
+        damaged=frame.iloc[:,0].copy();damaged.iloc[-1200]=np.nan
         damaged.to_csv(root/'prices/SYN_GAP.csv')
         try:
             for stage in ['samples','discovery','validation','specification','mvou','signals','audit','analytics']:

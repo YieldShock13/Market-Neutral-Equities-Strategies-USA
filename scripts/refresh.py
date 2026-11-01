@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'runtime'
 sys.path.insert(0,str(ROOT))
 from audit_tools import ISSUER_CLASSES
-from market_calendar import rolling_ten_trading_years
+from market_calendar import rolling_five_trading_years
 from eligibility import complete_history
 
 def issuer_key(info):
@@ -55,8 +55,8 @@ def fetch_security(row):
         # Official exchange cutoff also protects manual intraday refreshes.
         series = series.loc[series.index <= today]
         aligned,coverage=complete_history(series,REQUIRED_CALENDAR)
-        if not coverage['Eligible10TradingYears']:
-            return dict(ticker=symbol,status='EXCLUDED',reason='Incomplete rolling 2520-session history',**coverage)
+        if not coverage['Eligible5TradingYears']:
+            return dict(ticker=symbol,status='EXCLUDED',reason='Incomplete rolling 1260-session history',**coverage)
         key = issuer_key(info)
         for group in ISSUER_CLASSES:
             if symbol in group:
@@ -82,7 +82,7 @@ def main():
     RUNTIME.mkdir(exist_ok=True)
     (RUNTIME / 'vendor').mkdir(exist_ok=True)
     (RUNTIME / 'metadata').mkdir(exist_ok=True)
-    sessions=rolling_ten_trading_years()
+    sessions=rolling_five_trading_years()
     global REQUIRED_CALENDAR
     REQUIRED_CALENDAR=sessions
     global SESSION_END
@@ -152,8 +152,8 @@ def main():
         'eligible_issuers':len(selected), 'status':'success',
         'source_commit':os.environ.get('GITHUB_SHA','local'),
         'unresolved_requests':failed,
-        'eligibility_policy':'rolling_2520_complete_sessions_v1',
-        'required_sessions':2520,
+        'eligibility_policy':'rolling_1260_complete_sessions_v1',
+        'required_sessions':1260,
         'window_start':str(REQUIRED_CALENDAR.min().date()),
         'window_end':str(REQUIRED_CALENDAR.max().date()),
         'universe_scope':'Current membership and market cap; not historical point-in-time membership'
