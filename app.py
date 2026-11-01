@@ -79,8 +79,6 @@ status_path = PIPE / "refresh_status.json"
 if status_path.exists():
     refresh = json.loads(status_path.read_text())
     st.caption(f"Price date: {refresh['price_date']} · Updated: {refresh['completed_at']} · {refresh['eligible_issuers']:,} issuers")
-else:
-    st.info("Historical snapshot · First automated refresh pending")
 
 try:
     data, positions = load_data()
