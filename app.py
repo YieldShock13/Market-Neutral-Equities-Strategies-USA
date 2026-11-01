@@ -103,7 +103,7 @@ data["Stability"] = np.where(
 )
 
 with st.sidebar:
-    st.image(str(ROOT / "assets/meridian-mark.svg"), width=64)
+    st.markdown(f'<img src="data:image/svg+xml;base64,{LOGO}" width="64" alt="Meridian" style="display:block;margin-bottom:12px;"/>', unsafe_allow_html=True)
     st.markdown("### Meridian")
     st.caption("MODEL X / UNIVERSE FILTERS")
 
